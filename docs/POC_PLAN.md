@@ -27,6 +27,8 @@ Das Angebot schuldet keinen Erfolg, verspricht aber einen „belastbaren Nachwei
 
 ## Datenanfrage (priorisiert)
 
+Die vollständige, begründete Liste mit Hypothesen steht in [`ANFORDERUNGSLISTE.md`](ANFORDERUNGSLISTE.md). Hier die Kurzfassung:
+
 **Muss**
 1. DTO / Auftragseingang im SAP-Rohformat: mindestens 24, besser 36 Monate, für die Pilotgruppen. Felder: Datum, Material, Land (Empfänger), Kunde/Auftraggeber, Menge.
 2. **Archivierte Forecast-Stände**: mindestens 12 Monate, je Stand Systemvorschlag **und** freigegebener Planer-Wert je Artikel und Monat. Falls nur als alte Excel-Dateien vorhanden: die Dateien selbst.

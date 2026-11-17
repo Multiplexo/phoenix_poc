@@ -2,6 +2,8 @@
 
 Prototyp zum Angebot **AG0021** („PoC zur KI-basierten Bedarfsplanung der BU Paderborn“). Er ist eine **ergänzende Entscheidungshilfe vor SAP IBP**. Er ersetzt weder IBP noch die Planer, und er ist kein Excel-Ersatz.
 
+> **Was wir von Phoenix brauchen:** [`docs/ANFORDERUNGSLISTE.md`](docs/ANFORDERUNGSLISTE.md) (auch als Excel zum Nachhalten).
+>
 > Vor dem Lesen des Codes: [`docs/CHALLENGE.md`](docs/CHALLENGE.md) gleicht das gezeichnete Angebot mit dem Entwickler-Briefing ab und begründet den Zuschnitt. Kurz gesagt: Das Angebot ist verbindlich. Aus dem Briefing bleiben Fachlogik, WBZ-Versatz und Human-in-the-Loop. Generator mit Netting und Django-Plattform entfallen.
 
 ## Was der Prototyp tut
