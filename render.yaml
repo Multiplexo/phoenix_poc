@@ -1,0 +1,16 @@
+# Render Blueprint: in Render "New > Blueprint" und dieses Repo wählen.
+services:
+  - type: web
+    name: phoenix-poc-voranalyse
+    runtime: docker
+    plan: free
+    region: frankfurt
+    branch: main
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: BASIC_AUTH_USER
+        sync: false      # wird beim Anlegen in Render abgefragt
+      - key: BASIC_AUTH_PASSWORD
+        sync: false

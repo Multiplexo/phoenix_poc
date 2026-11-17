@@ -1,0 +1,8 @@
+.git
+out
+tests
+docs
+__pycache__
+*.pyc
+data/*
+!data/beispiel

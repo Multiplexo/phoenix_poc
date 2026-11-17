@@ -41,6 +41,11 @@ Optional, Regel-Vorschläge aus Notizen der Planer-Termine (braucht `ANTHROPIC_A
 python -m pcpoc wissen data/beispiel/planer_notizen.txt --out wissen_vorschlaege.yaml
 ```
 
+## Deployment und Präsentation
+
+- Render: `render.yaml` + `Dockerfile`, passwortgeschützt, Details in [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+- Gliederung der Präsentationen für Challenge-Termin und Abschluss: [`docs/PRAESENTATION.md`](docs/PRAESENTATION.md).
+
 ## Aufbau
 
 ```
