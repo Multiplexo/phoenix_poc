@@ -44,7 +44,7 @@ python -m pcpoc wissen data/beispiel/planer_notizen.txt --out wissen_vorschlaege
 ## Deployment und Präsentation
 
 - Render: `render.yaml` + `Dockerfile`, passwortgeschützt, Details in [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
-- Gliederung der Präsentationen für Challenge-Termin und Abschluss: [`docs/PRAESENTATION.md`](docs/PRAESENTATION.md).
+- Präsentationen für Challenge-Termin und Abschluss im Multiplexo-Design, als HTML und PowerPoint aus einer Quelle: `python -m pcpoc praesentation`, Details in [`docs/PRAESENTATION.md`](docs/PRAESENTATION.md). Auf Render unter `/praesentationen/`.
 
 ## Aufbau
 

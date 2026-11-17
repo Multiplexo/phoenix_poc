@@ -42,4 +42,20 @@ Ziel: Nachweis „ob und wo“ Mehrwert entsteht, Empfehlung für IBP und das we
 
 ## Umsetzung
 
-Offene Entscheidung: Format der Präsentation (PowerPoint im Phoenix- oder Multiplexo-Master, oder eine HTML-Präsentation, die die Zahlen direkt aus dem Lauf zieht). Für den Abschluss ist eine Erzeugung aus dem Lauf sinnvoll, weil sich die Zahlen bis zuletzt ändern.
+Beide Präsentationen entstehen aus **einer Quelle** (`pcpoc/deck.py`) in **zwei Fassungen**, beide im Multiplexo-Design nach Brandbook (Stand November 2026): Midnight Navy, Champagnergold und Electric Cyan, Montserrat, Punktkugel, Lichtstreifen, Eyebrow mit Goldlinie, zweifarbige Headline, Karten und Fortschrittsleiste.
+
+```bash
+python -m pcpoc praesentation                 # mit Demo-Daten
+python -m pcpoc praesentation pfad/zu/daten   # mit echten Daten
+```
+
+| Fassung | Datei | Wofür |
+|---|---|---|
+| HTML | `out/praesentation_<name>.html` | Live-Termin, Link auf Render (`/praesentationen/`); ← → blättern, F Vollbild, P drucken/PDF; Schriften und Logos eingebettet, läuft offline |
+| PowerPoint | `out/praesentation_<name>.pptx` | Versand und Ablage; Layouts „MX_TITEL“/„MX_INHALT“, Abschnitte je Kapitel, Sprechernotizen, native Diagramme |
+
+- Die Abschluss-Präsentation übernimmt ihre Zahlen aus dem Lauf. Folien mit Zahlen aus Demo-Daten tragen das Kennzeichen „Demo-Daten“; es verschwindet bei einem Lauf mit echten Daten.
+- PowerPoint braucht die Schrift **Montserrat** auf dem Rechner (kostenlos über Google Fonts). Fehlt sie, ersetzt PowerPoint sie, und Zeilenumbrüche können sich verschieben.
+- Die PowerPoint-Fassung braucht Node.js: `cd deck && npm ci` einmalig. Ohne Node entsteht nur die HTML-Fassung.
+- Logo, Punktkugel und Wortmarke liegen in `deck/assets/` (aus dem Logo-Paket), Montserrat unter `deck/assets/fonts/` (SIL Open Font License, `OFL.txt`).
+- Offen: Folie „Planer-Feedback“ ist ein Platzhalter, bis die Feedback-CSV aus Planer-Termin 2 vorliegt. Das Phoenix-Logo ist bewusst nicht auf den Folien; Co-Branding nach Brandbook (beide Logos, getrennt durch ein Cyan-×) ist möglich, sobald eine Logo-Datei von Phoenix für dunklen Grund vorliegt.

@@ -1,0 +1,8 @@
+{
+  "name": "phoenix-poc-deck",
+  "private": true,
+  "description": "PowerPoint-Erzeugung der PoC-Pr\u00e4sentationen aus deck_*.json",
+  "dependencies": {
+    "pptxgenjs": "3.12.0"
+  }
+}

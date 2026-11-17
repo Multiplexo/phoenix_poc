@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>/*__TITLE__*/</title>
+<style>
+/*__FONTS__*/
+:root{
+  --navy:#101D35; --gold:#CBA76A; --cyan:#16C8DB; --ivory:#F5F3EE; --grau:#A3AEBF; --linie:rgba(245,243,238,.14);
+  --karte:rgba(245,243,238,.035); --karte-hi:rgba(22,200,219,.09);
+  --font:"Montserrat", Arial, sans-serif;
+}
+/* Präsentation ist bewusst immer dunkel (Brandbook: Präsentationen auf Midnight Navy); Seitenhintergrund folgt dem System */
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){--page:#e6e4df}}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--page:#0a1222}}
+:root[data-theme="light"]{--page:#e6e4df}:root[data-theme="dark"]{--page:#0a1222}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--page,#0a1222);font-family:var(--font);overflow:hidden}
+#stage{position:fixed;inset:0;display:grid;place-items:center}
+.slide{position:absolute;width:1920px;height:1080px;transform-origin:center center;background:var(--navy);color:var(--ivory);
+  overflow:hidden;display:none;border-radius:0;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.slide.on{display:block}
+.slide .glow{position:absolute;inset:0;background:radial-gradient(1000px 700px at 86% 0%, rgba(60,95,150,.38), transparent 70%)}
+.slide.titel .glow,.slide.abschluss .glow{background:radial-gradient(900px 700px at 78% 10%, rgba(60,95,150,.45), transparent 70%)}
+.streak{position:absolute;inset:0;pointer-events:none}
+.logo{position:absolute;left:120px;top:84px;height:64px}
+.wort{position:absolute;left:120px;top:84px;height:24px}
+.chapter{position:absolute;right:110px;top:40px;font-size:260px;font-weight:800;color:rgba(245,243,238,.045);letter-spacing:-.04em;line-height:1}
+.demo{position:absolute;right:120px;top:84px;font-size:15px;font-weight:700;letter-spacing:.2em;color:var(--gold);border:1.5px solid var(--gold);padding:6px 14px;border-radius:999px;text-transform:uppercase}
+.content{position:absolute;left:120px;right:120px;top:190px;bottom:150px}
+.eyebrow{display:flex;align-items:center;gap:22px;font-size:20px;font-weight:700;letter-spacing:.25em;text-transform:uppercase;color:var(--gold);margin-bottom:26px}
+.eyebrow::before{content:"";width:48px;height:2px;background:var(--gold)}
+h1{margin:0;font-size:84px;line-height:1.04;font-weight:800;letter-spacing:-.02em}
+h1 .z2.gold{color:var(--gold)} h1 .z2.cyan{color:var(--cyan)}
+.titel h1{font-size:104px}
+.lead{font-size:26px;line-height:1.5;color:var(--grau);max-width:1300px;margin-top:34px}
+.unter{font-size:24px;color:var(--grau);margin-top:36px}
+.kugel{position:absolute;right:170px;top:250px;width:520px;height:520px}
+.progress{position:absolute;left:120px;right:120px;bottom:72px;display:flex;gap:14px}
+.progress i{flex:1;height:5px;border-radius:3px;background:rgba(245,243,238,.18)}
+.progress i.on{background:var(--gold)}
+.pnum{position:absolute;right:120px;bottom:96px;font-size:16px;font-weight:600;color:var(--grau);letter-spacing:.08em}
+.grid{display:grid;gap:28px;margin-top:56px}
+.card{background:var(--karte);border:1.5px solid var(--linie);border-radius:18px;padding:34px 34px 36px}
+.card.hi{background:var(--karte-hi);border-color:var(--cyan)}
+.card .lab{font-size:16px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--grau);margin-bottom:14px}
+.card.hi .lab{color:var(--cyan)}
+.card .tt{font-size:32px;font-weight:700;line-height:1.2;margin-bottom:14px}
+.card .tx{font-size:22px;line-height:1.5;color:var(--grau)}
+.num{width:64px;height:64px;border-radius:50%;border:2.5px solid var(--cyan);display:grid;place-items:center;font-weight:800;font-size:22px;color:var(--cyan);margin-bottom:22px}
+.card.hi .num{background:var(--gold);border-color:var(--gold);color:var(--navy)}
+.stat .v{font-size:80px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.stat.hi .v{color:var(--cyan)}
+.stat .l{font-size:22px;font-weight:700;margin-top:18px}
+.stat .h{font-size:19px;color:var(--grau);margin-top:6px}
+.cmp ul{margin:0;padding:0;list-style:none}
+.cmp li{font-size:26px;line-height:1.4;padding:14px 0 14px 44px;position:relative;border-top:1px solid var(--linie)}
+.cmp li:first-child{border-top:0}
+.cmp li::before{content:"";position:absolute;left:4px;top:27px;width:16px;height:16px;border-radius:50%;border:2.5px solid var(--cyan)}
+.cmp .neg li::before{border-color:var(--grau);border-radius:2px;transform:rotate(45deg);width:12px;height:12px;top:29px}
+.cmp .neg li{color:var(--grau)}
+.steps{display:flex;gap:24px;margin-top:70px;position:relative}
+.steps::before{content:"";position:absolute;left:40px;right:40px;top:40px;height:2px;background:var(--linie)}
+.step{flex:1;position:relative}
+.step .c{width:80px;height:80px;border-radius:50%;border:2.5px solid var(--cyan);background:var(--navy);display:grid;place-items:center;font-weight:800;font-size:20px;color:var(--cyan);position:relative}
+.step.on .c{background:var(--gold);border-color:var(--gold);color:var(--navy)}
+.step .t{font-size:28px;font-weight:700;margin-top:30px}
+.step .x{font-size:21px;line-height:1.45;color:var(--grau);margin-top:10px;padding-right:12px}
+table{border-collapse:collapse;width:100%;margin-top:50px}
+th{font-size:16px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--grau);text-align:left;padding:0 20px 18px 0}
+td{font-size:25px;padding:22px 20px 22px 0;border-top:1px solid var(--linie)}
+td:first-child{font-weight:700}
+.st{display:inline-block;font-size:17px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:6px 14px;border-radius:999px;border:1.5px solid var(--grau);color:var(--grau)}
+.st.ok{border-color:var(--cyan);color:var(--cyan)} .st.part{border-color:var(--gold);color:var(--gold)}
+.bildgrid{display:grid;grid-template-columns:1.25fr 1fr;gap:70px;margin-top:50px;align-items:start}
+.bildgrid img{width:100%;height:470px;object-fit:cover;object-position:top left;border-radius:14px;border:1.5px solid var(--linie);display:block}
+.link{margin-top:30px;font-size:22px;font-weight:700;color:var(--cyan)}
+.chart{margin-top:40px}
+.legend{display:flex;gap:34px;font-size:19px;color:var(--grau);margin-top:6px}
+.legend i{display:inline-block;width:16px;height:16px;border-radius:4px;margin-right:10px;vertical-align:-2px}
+.chart text{font-family:var(--font)}
+.kontakt{font-size:22px;color:var(--grau);margin-top:60px}
+.hint{position:fixed;left:16px;bottom:12px;font:12px/1.4 Arial,sans-serif;color:#8892a3;opacity:.8}
+@media print{
+  @page{size:1920px 1080px;margin:0}
+  html,body{overflow:visible;height:auto;background:#101D35}
+  #stage{position:static;display:block}
+  .slide{display:block!important;position:relative;transform:none!important;box-shadow:none;page-break-after:always}
+  .hint{display:none}
+}
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div class="hint">← → blättern · F Vollbild · P drucken / PDF</div>
+<script>
+const SPEC = /*__SPEC__*/null;
+const ASSETS = /*__ASSETS__*/null;
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const stage = document.getElementById("stage");
+const N = SPEC.folien.length;
+
+function head(f){
+  const z = f.titel || ["",""];
+  return `${f.eyebrow ? `<div class="eyebrow">${esc(f.eyebrow)}</div>` : ""}
+    <h1>${esc(z[0])}${z[1] ? `<br><span class="z2 ${f.akzent||"gold"}">${esc(z[1])}</span>` : ""}</h1>`;
+}
+function chrome(f, i){
+  if (f.typ === "titel" || f.typ === "abschluss") return "";
+  const k = f.kapitel ?? 0;
+  const prog = SPEC.kapitel.map((_, j) => `<i class="${j===k?"on":""}"></i>`).join("");
+  return `<img class="wort" src="${ASSETS.wortmarke}" alt="Multiplexo">
+    <div class="chapter">${String(k+1).padStart(2,"0")}</div>
+    <div class="progress">${prog}</div><div class="pnum">${i+1} / ${N}</div>`;
+}
+const STREAK = `<svg class="streak" viewBox="0 0 1920 1080" preserveAspectRatio="none"><defs>
+  <linearGradient id="sc" x1="0" x2="1"><stop offset="0" stop-color="#16C8DB" stop-opacity="0"/><stop offset=".75" stop-color="#16C8DB" stop-opacity=".9"/><stop offset="1" stop-color="#16C8DB" stop-opacity=".4"/></linearGradient>
+  <linearGradient id="sg" x1="0" x2="1" y1="1" y2="0"><stop offset="0" stop-color="#CBA76A" stop-opacity=".95"/><stop offset="1" stop-color="#CBA76A" stop-opacity="0"/></linearGradient>
+  <filter id="bl"><feGaussianBlur stdDeviation="6"/></filter></defs>
+  <g filter="url(#bl)" opacity=".8"><line x1="640" y1="1080" x2="1920" y2="760" stroke="url(#sc)" stroke-width="8"/><line x1="1580" y1="860" x2="1880" y2="420" stroke="url(#sg)" stroke-width="6"/></g>
+  <line x1="640" y1="1080" x2="1920" y2="760" stroke="url(#sc)" stroke-width="2.5"/><line x1="1580" y1="860" x2="1880" y2="420" stroke="url(#sg)" stroke-width="2"/></svg>`;
+
+function bars(f){
+  const W = 1680, H = f.text ? 420 : 470, P = {l:70, r:20, t:40, b:70};
+  const cats = f.kategorien, R = f.reihen;
+  const all = R.flatMap(r => r.werte).concat([0, f.schwelle ?? 0]);
+  let max = Math.max(...all), min = Math.min(...all);
+  max = max > 0 ? max * 1.15 : 1; min = min < 0 ? min * 1.25 : 0;
+  const y = v => P.t + (H-P.t-P.b) * (max - v) / (max - min);
+  const gw = (W-P.l-P.r) / cats.length, bw = Math.min(110, gw * 0.7 / R.length);
+  const col = {cyan:"#16C8DB", gold:"#CBA76A", grau:"#56647c"};
+  let g = `<line x1="${P.l}" x2="${W-P.r}" y1="${y(0)}" y2="${y(0)}" stroke="rgba(245,243,238,.35)" stroke-width="2"/>`;
+  if (f.schwelle != null) g += `<line x1="${P.l}" x2="${W-P.r}" y1="${y(f.schwelle)}" y2="${y(f.schwelle)}" stroke="#CBA76A" stroke-dasharray="10 8" stroke-width="2"/>
+    <text x="${W-P.r}" y="${y(f.schwelle)-12}" text-anchor="end" fill="#CBA76A" font-size="18" font-weight="700">Schwelle ${f.schwelle} ${esc(f.einheit)}</text>`;
+  cats.forEach((c, i) => {
+    const x0 = P.l + gw*i + (gw - bw*R.length)/2;
+    R.forEach((r, j) => {
+      const v = r.werte[i], x = x0 + j*bw + 4, top = Math.min(y(v), y(0)), h = Math.abs(y(v)-y(0));
+      g += `<rect x="${x}" y="${top}" width="${bw-8}" height="${Math.max(h,2)}" rx="6" fill="${col[r.farbe]||col.cyan}"/>
+        <text x="${x+(bw-8)/2}" y="${v>=0 || h<40 ? top-12 : top+h+28}" text-anchor="middle" fill="#F5F3EE" font-size="21" font-weight="700">${(f.einheit==="Pp." && v>0 ? "+" : "") + String(v).replace(".",",").replace("-","−")}</text>`;
+    });
+    g += `<text x="${P.l + gw*i + gw/2}" y="${H-22}" text-anchor="middle" fill="#A3AEBF" font-size="21" font-weight="600">${esc(c)}</text>`;
+  });
+  const leg = R.length > 1 ? `<div class="legend">${R.map(r => `<span><i style="background:${col[r.farbe]||col.cyan}"></i>${esc(r.name)}</span>`).join("")}</div>` : "";
+  return `<div class="chart">${leg}<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(f.eyebrow)}">${g}</svg></div>`;
+}
+
+function body(f){
+  switch (f.typ) {
+    case "titel": return `<img class="logo" src="${ASSETS.logo}" alt="Multiplexo GmbH"><img class="kugel" src="${ASSETS.kugel}" alt="">${STREAK}
+      <div class="content" style="top:330px;right:760px">${head(f)}<div class="unter">${esc(f.unterzeile)}</div></div>`;
+    case "abschluss": return `<img class="logo" src="${ASSETS.logo}" alt="Multiplexo GmbH"><img class="kugel" src="${ASSETS.kugel}" alt="">${STREAK}
+      <div class="content" style="top:330px;right:760px">${head(f)}<div class="lead">${esc(f.text)}</div><div class="kontakt">${esc(f.kontakt)}</div></div>`;
+    case "kennzahlen": return `<div class="content">${head(f)}
+      <div class="grid" style="grid-template-columns:repeat(${f.werte.length},1fr)">${f.werte.map(w =>
+        `<div class="card stat ${w.hervorheben?"hi":""}"><div class="v">${esc(w.wert)}</div><div class="l">${esc(w.label)}</div><div class="h">${esc(w.hinweis)}</div></div>`).join("")}</div>
+      ${f.text ? `<div class="lead">${esc(f.text)}</div>` : ""}</div>`;
+    case "karten": return `<div class="content">${head(f)}
+      <div class="grid" style="grid-template-columns:repeat(${f.karten.length},1fr)">${f.karten.map((k,i) =>
+        `<div class="card ${f.hervorheben===i?"hi":""}">${f.nummeriert ? `<div class="num">${String(i+1).padStart(2,"0")}</div>` : ""}<div class="lab">${esc(k.label)}</div><div class="tt">${esc(k.titel)}</div><div class="tx">${esc(k.text)}</div></div>`).join("")}</div>
+      ${f.text ? `<div class="lead">${esc(f.text)}</div>` : ""}</div>`;
+    case "vergleich": return `<div class="content">${head(f)}
+      <div class="grid cmp" style="grid-template-columns:1fr 1fr">
+        <div class="card hi"><div class="lab">${esc(f.links.label)}</div><ul>${f.links.punkte.map(p => `<li>${esc(p)}</li>`).join("")}</ul></div>
+        <div class="card neg"><div class="lab">${esc(f.rechts.label)}</div><ul>${f.rechts.punkte.map(p => `<li>${esc(p)}</li>`).join("")}</ul></div></div></div>`;
+    case "schritte": return `<div class="content">${head(f)}
+      <div class="steps">${f.schritte.map(s => `<div class="step ${s.aktiv?"on":""}"><div class="c">${esc(s.nr)}</div><div class="t">${esc(s.titel)}</div><div class="x">${esc(s.text)}</div></div>`).join("")}</div></div>`;
+    case "tabelle": return `<div class="content">${head(f)}
+      <table><tr>${f.kopf.map(h => `<th>${esc(h)}</th>`).join("")}</tr>${f.zeilen.map(z => `<tr>${z.map((c,j) =>
+        `<td>${j===z.length-1 && f.kopf[j]==="Status" ? `<span class="st ${c==="erfüllt"?"ok":c==="teilweise"?"part":""}">${esc(c)}</span>` : esc(c)}</td>`).join("")}</tr>`).join("")}</table></div>`;
+    case "bild": return `<div class="content">${head(f)}
+      <div class="bildgrid"><img src="${ASSETS.bilder[f.bild] || ""}" alt="${esc(f.eyebrow)}"><div><div class="lead" style="margin-top:0">${esc(f.text)}</div>${f.link ? `<div class="link">${esc(f.link)}</div>` : ""}</div></div></div>`;
+    case "balken": return `<div class="content">${head(f)}${bars(f)}${f.text ? `<div class="lead" style="margin-top:10px">${esc(f.text)}</div>` : ""}</div>`;
+  }
+  return `<div class="content">${head(f)}</div>`;
+}
+
+stage.innerHTML = SPEC.folien.map((f, i) =>
+  `<section class="slide ${f.typ}" aria-label="Folie ${i+1}"><div class="glow"></div>${chrome(f, i)}${f.demo ? `<div class="demo">Demo-Daten</div>` : ""}${body(f)}</section>`).join("");
+const slides = [...document.querySelectorAll(".slide")];
+let cur = 0;
+try { const h = parseInt(location.hash.slice(1)); if (h >= 1 && h <= N) cur = h - 1; } catch(e) {}
+function fit(){ const s = Math.min(innerWidth/1920, innerHeight/1080); slides.forEach(el => el.style.transform = `scale(${s})`); }
+function show(i){ cur = Math.max(0, Math.min(N-1, i)); slides.forEach((el, j) => el.classList.toggle("on", j===cur)); history.replaceState(null, "", "#" + (cur+1)); }
+addEventListener("resize", fit);
+addEventListener("keydown", e => {
+  if (["ArrowRight","PageDown"," ","Enter"].includes(e.key)) { e.preventDefault(); show(cur+1); }
+  else if (["ArrowLeft","PageUp","Backspace"].includes(e.key)) { e.preventDefault(); show(cur-1); }
+  else if (e.key === "Home") show(0); else if (e.key === "End") show(N-1);
+  else if (e.key.toLowerCase() === "f") { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.(); }
+  else if (e.key.toLowerCase() === "p") print();
+});
+stage.addEventListener("click", e => show(cur + (e.clientX > innerWidth/3 ? 1 : -1)));
+let tx = null; stage.addEventListener("touchstart", e => tx = e.touches[0].clientX, {passive:true});
+stage.addEventListener("touchend", e => { if (tx==null) return; const d = e.changedTouches[0].clientX - tx; if (Math.abs(d) > 40) show(cur + (d < 0 ? 1 : -1)); tx = null; });
+fit(); show(cur);
+</script>
+</body>
+</html>

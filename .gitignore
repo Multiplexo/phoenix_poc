@@ -7,3 +7,4 @@ data/*
 !data/beispiel/
 wissen_vorschlaege.yaml
 .DS_Store
+node_modules/

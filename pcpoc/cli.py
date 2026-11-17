@@ -55,6 +55,11 @@ def main(argv=None) -> None:
     s.add_argument("folder", type=Path)
     s.add_argument("--seed", default=21, type=int)
 
+    k = sub.add_parser("praesentation", help="Präsentationen (Kick-off/Challenge und Abschluss) als HTML und PowerPoint")
+    k.add_argument("folder", type=Path, nargs="?", help="Datenordner; ohne Angabe: synthetische Beispieldaten")
+    k.add_argument("--params", default=DEFAULT_PARAMS, type=Path)
+    k.add_argument("--out", default="out", type=Path)
+
     w = sub.add_parser("wissen", help="Regel-Vorschläge aus Gesprächsnotizen (Sprachmodell, optional)")
     w.add_argument("notes", type=Path)
     w.add_argument("--out", default="wissen_vorschlaege.yaml", type=Path)
@@ -68,6 +73,15 @@ def main(argv=None) -> None:
         _run(folder, DEFAULT_PARAMS, a.out, None, True, True)
     elif a.cmd == "run":
         _run(a.folder, a.params, a.out, a.stand, False, not a.ohne_rueckvergleich, a.theme)
+    elif a.cmd == "praesentation":
+        from . import deck
+        synthetic = a.folder is None
+        folder = a.folder or ROOT / "data" / "beispiel"
+        if synthetic and not (folder / "dto.csv").exists():
+            synth.generate(folder)
+        rr = pipeline.run(io.load_dataset(folder, a.params))
+        for p in deck.build_all(rr, a.out, synthetic):
+            print(f"-> {p}")
     elif a.cmd == "synth":
         print(synth.generate(a.folder, seed=a.seed))
     elif a.cmd == "wissen":

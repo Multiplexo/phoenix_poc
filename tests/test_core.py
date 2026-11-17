@@ -116,3 +116,24 @@ def test_knowledge_proposals_format():
                                     "Termin", "2026-12", "Planer")
     r = yaml.safe_load(y)["regeln"][0]
     assert r["status"] == "vorschlag" and r["menge_pro_monat"] == 400 and "kunde" not in r and r["unsicher"] is True
+
+
+def test_praesentationen(data, tmp_path):
+    import json
+    from pcpoc import deck
+    _, ds, _ = data
+    rr = pipeline.run(ds)
+    paths = deck.write_specs(rr, tmp_path, synthetic=True)
+    for p in paths:
+        spec = json.loads(p.read_text(encoding="utf-8"))
+        assert spec["folien"][0]["typ"] == "titel" and spec["folien"][-1]["typ"] == "abschluss"
+        for f in spec["folien"]:
+            assert f["typ"] in ("titel", "aussage", "karten", "vergleich", "kennzahlen", "balken", "schritte", "tabelle", "bild", "abschluss")
+            if f["typ"] not in ("titel", "abschluss"):
+                assert 0 <= f.get("kapitel", 0) < len(spec["kapitel"])
+            if f["typ"] == "balken":
+                assert all(len(r["werte"]) == len(f["kategorien"]) for r in f["reihen"])
+        html = deck.write_html(spec, tmp_path / f"{spec['name']}.html").read_text(encoding="utf-8")
+        assert "/*__SPEC__*/null" not in html and "font/woff2" in html
+    ab = json.loads(paths[1].read_text(encoding="utf-8"))
+    assert any(f.get("demo") for f in ab["folien"])  # Demo-Daten sind gekennzeichnet
