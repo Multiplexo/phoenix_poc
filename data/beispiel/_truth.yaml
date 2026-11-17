@@ -1,0 +1,63 @@
+# Nur für Tests: welche Muster wurden eingebaut
+A-1001: {cluster: standard}
+A-1002: {cluster: standard}
+A-1003:
+  cluster: standard
+  peak: {i: 16, country: DE, qty: 2371}
+A-1004: {cluster: standard}
+A-1005: {cluster: standard}
+A-1006: {cluster: standard}
+A-1007: {cluster: standard}
+A-1008:
+  cluster: standard
+  peak: {i: 28, country: PL, qty: 10186}
+A-1009: {cluster: standard}
+A-1010: {cluster: standard}
+A-1011:
+  cluster: standard
+  peak: {i: 29, country: DE, qty: 679}
+A-1012: {cluster: standard}
+A-1013: {cluster: standard}
+A-1014:
+  cluster: standard
+  peak: {i: 28, country: FR, qty: 1839}
+A-1015: {cluster: standard}
+A-1016: {cluster: standard}
+A-1017:
+  cluster: standard
+  peak: {i: 23, country: IT, qty: 759}
+A-1018: {cluster: standard}
+A-1019: {cluster: standard}
+A-1020:
+  cluster: standard
+  peak: {i: 18, country: DE, qty: 3914}
+A-1021:
+  cluster: standard
+  peak: {i: 21, country: US, qty: 5936}
+A-1022: {cluster: standard}
+A-1023: {cluster: standard}
+A-1024: {cluster: standard}
+A-1025: {cluster: standard}
+A-1026: {cluster: standard}
+A-1027: {cluster: hyperscaler, kstart: 20, P: 620.3968436596468, rule_qty: 600.0}
+A-1028: {cluster: hyperscaler, kstart: 23, P: 2845.712553193096, rule_qty: 3020.0}
+A-1029: {cluster: hyperscaler, kstart: 26, P: 637.1179351080119, rule_qty: 660.0}
+A-1030: {cluster: hyperscaler, kstart: 20, P: 3969.6650238409397}
+A-1031: {cluster: hyperscaler, kstart: 26, P: 484.8927444659378}
+A-1032: {cluster: ramp_up}
+A-1033: {cluster: ramp_up}
+A-1034: {cluster: ramp_up}
+A-1035:
+  cluster: ramp_up
+  peak: {i: 25, country: DE, qty: 354}
+A-1036: {cluster: ramp_up}
+A-1037: {cluster: ramp_down, kstart: 16}
+A-1038: {cluster: ramp_down, kstart: 15}
+A-1039: {cluster: ramp_down, kstart: 15}
+A-1040: {cluster: ramp_down, kstart: 22}
+A-1041: {cluster: ramp_down, kstart: 16}
+A-1042: {cluster: intermittent}
+A-1043: {cluster: intermittent}
+A-1044: {cluster: intermittent}
+A-1045: {cluster: intermittent}
+A-1046: {cluster: intermittent}

@@ -1,0 +1,45 @@
+# Parameter des Prototyps.
+# Alle Werte sind PLATZHALTER, bis die Excel-Logik von Phoenix Contact
+# reverse-engineered ist (siehe docs/OFFENE_FRAGEN.md). Jede Zahl hier ist eine
+# fachliche Annahme und muss im PoC mit den Demand Plannern bestätigt werden.
+
+baseline:
+  # Fortschreibung aus Auftragseingang (AE): gewichteter Mix der Monatsdurchschnitte
+  # der letzten 3 / 6 / 12 Monate. Gewichte müssen sich zu 1 summieren.
+  gewichte: {ae3: 0.5, ae6: 0.3, ae12: 0.2}
+  horizont_monate: 12
+  # pauschales Marktwachstum p. a. (Market Evaluation Board), wird je Monat anteilig aufgeschlagen
+  marktwachstum_pa: 0.0
+
+accuracy:
+  # WBZ-Offset: Ist-Monat m wird gegen den Forecast verglichen, der in Monat m - lag abgegeben wurde.
+  # Standard je Artikel aus articles.csv (Spalte lead_time_months), sonst dieser Wert.
+  lag_monate_default: 4
+  # Bewertungsfenster für Kennzahlen (Monate bis zum letzten Ist-Monat)
+  fenster_monate: 12
+
+signale:
+  # Ping, wenn Ist und Forecast (mit WBZ-Offset) über N Monate kumuliert mehr als X abweichen
+  abweichung_schwelle: 0.20
+  abweichung_monate: 3
+  # Ausreißer: Monat > faktor * Median der übrigen 12 Monate UND robuster z-Wert > z
+  ausreisser_faktor: 3.0
+  ausreisser_robust_z: 3.5
+  # Konzentration: Anteil des Peaks bei einem Land/Kunden, ab dem der Verdacht "Lagerauffüllung" stark ist
+  ausreisser_konzentration: 0.7
+  # Intermittenz-Klassifikation nach Syntetos/Boylan
+  adi_grenze: 1.32
+  cv2_grenze: 0.49
+
+empfehlungen:
+  # Run-Rate weicht vom aktuellen Plan ab
+  runrate_schwelle: 0.20
+  # systematischer Bias der manuellen Anpassungen
+  bias_schwelle: 0.10
+  bias_vorzeichen_anteil: 0.75
+  bias_min_punkte: 6
+  # Empfehlungen werden gedämpft (nur ein Teil der Abweichung wird übernommen)
+  daempfung: 0.5
+  # Gesamtfaktor wird auf diesen Bereich begrenzt
+  faktor_min: 0.4
+  faktor_max: 2.5

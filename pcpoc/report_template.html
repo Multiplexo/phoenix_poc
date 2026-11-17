@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voranalyse Bedarfsplanung</title>
+<style>
+:root{
+  --bg:#f6f7f9; --panel:#ffffff; --ink:#1b1f24; --muted:#5d6672; --line:#e2e5ea; --accent:#0b6bcb;
+  --ist:#1b1f24; --final:#0b6bcb; --stat:#8a94a3; --emp:#d9480f;
+  --ok:#2b8a3e; --ok-bg:#e6f4ea; --warn:#a15c00; --warn-bg:#fff3d6; --bad:#c92a2a; --bad-bg:#fde8e8;
+  --info:#5f3dc4; --info-bg:#efeaff; --neutral-bg:#eef0f3;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#111418; --panel:#1a1e24; --ink:#e7eaee; --muted:#9aa4b1; --line:#2c323a; --accent:#5aa9ff;
+    --ist:#e7eaee; --final:#5aa9ff; --stat:#7d8794; --emp:#ff8a4c;
+    --ok:#69db7c; --ok-bg:#1d3324; --warn:#ffc35a; --warn-bg:#3a2d12; --bad:#ff8787; --bad-bg:#3b1c1c;
+    --info:#b197fc; --info-bg:#2a2340; --neutral-bg:#252a31;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#111418; --panel:#1a1e24; --ink:#e7eaee; --muted:#9aa4b1; --line:#2c323a; --accent:#5aa9ff;
+  --ist:#e7eaee; --final:#5aa9ff; --stat:#7d8794; --emp:#ff8a4c;
+  --ok:#69db7c; --ok-bg:#1d3324; --warn:#ffc35a; --warn-bg:#3a2d12; --bad:#ff8787; --bad-bg:#3b1c1c;
+  --info:#b197fc; --info-bg:#2a2340; --neutral-bg:#252a31;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{padding:20px 24px 8px;max-width:1280px;margin:0 auto}
+h1{font-size:20px;margin:0 0 4px}
+.sub{color:var(--muted)}
+.banner{margin:12px 0 0;padding:8px 12px;border-radius:6px;background:var(--warn-bg);color:var(--warn);font-weight:500}
+main{max-width:1280px;margin:0 auto;padding:8px 24px 48px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:12px 0 16px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.kpi .v{font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}
+.kpi .l{color:var(--muted);font-size:12px}
+.kpi .h{color:var(--muted);font-size:12px;margin-top:2px}
+nav.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:16px;overflow-x:auto}
+nav.tabs button{background:none;border:0;border-bottom:2px solid transparent;padding:8px 12px;color:var(--muted);font:inherit;cursor:pointer;white-space:nowrap}
+nav.tabs button.on{color:var(--ink);border-color:var(--accent);font-weight:600}
+section{display:none}section.on{display:block}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin-bottom:16px}
+.panel h2{font-size:15px;margin:0 0 8px}
+.panel p.note{color:var(--muted);margin:4px 0 10px;font-size:13px}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;color:var(--muted);font-weight:600}
+td.n,th.n{text-align:right;white-space:nowrap}
+tr.click{cursor:pointer}tr.click:hover{background:var(--neutral-bg)}
+tr.sel{background:var(--neutral-bg)}
+.chip{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;white-space:nowrap;background:var(--neutral-bg);color:var(--muted)}
+.s-ok{background:var(--ok-bg);color:var(--ok)}.s-warn{background:var(--warn-bg);color:var(--warn)}
+.s-bad{background:var(--bad-bg);color:var(--bad)}.s-info{background:var(--info-bg);color:var(--info)}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 8px}
+.split{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:16px}
+@media (max-width:900px){.split{grid-template-columns:1fr}}
+.scroll{max-height:640px;overflow:auto}
+.rec{border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin:10px 0}
+.rec .t{font-weight:600}
+.rec .b{color:var(--muted);font-size:12px;margin-top:4px}
+.rec .act{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center}
+button.small{font:inherit;font-size:12px;padding:3px 10px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+button.small.on-ok{background:var(--ok-bg);color:var(--ok);border-color:var(--ok)}
+button.small.on-bad{background:var(--bad-bg);color:var(--bad);border-color:var(--bad)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin:4px 0}
+.legend i{display:inline-block;width:14px;height:0;border-top:2px solid;vertical-align:middle;margin-right:4px}
+svg text{fill:var(--muted);font-size:11px}
+.muted{color:var(--muted)}
+ul.sig{margin:6px 0;padding-left:18px}
+.bar{height:8px;border-radius:4px;background:var(--neutral-bg);position:relative;min-width:80px}
+.bar span{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:var(--accent)}
+code{font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Voranalyse Bedarfsplanung</h1>
+  <div class="sub" id="sub"></div>
+  <div class="banner" id="synth" hidden>Synthetische Beispieldaten. Die Zahlen zeigen nur, wie das Werkzeug arbeitet, und sagen nichts über Phoenix Contact aus.</div>
+</header>
+<main>
+  <div class="kpis" id="kpis"></div>
+  <nav class="tabs" id="tabs">
+    <button data-t="art" class="on">Artikel &amp; Empfehlungen</button>
+    <button data-t="acc">Prognosegüte &amp; manuelle Anpassungen</button>
+    <button data-t="bt">Rückvergleich</button>
+    <button data-t="site">Standorte</button>
+    <button data-t="kb">Wissensbasis</button>
+    <button data-t="meth">Methodik</button>
+  </nav>
+
+  <section id="art" class="on">
+    <div class="split">
+      <div class="panel">
+        <div class="toolbar">
+          <input id="q" placeholder="Artikel suchen" size="14">
+          <select id="fs"><option value="">Alle Status</option></select>
+          <select id="fc"><option value="">Alle Cluster</option></select>
+          <button class="small" id="exp">Planer-Feedback exportieren (CSV)</button>
+        </div>
+        <div class="scroll"><table id="tl"><thead><tr>
+          <th>Artikel</th><th>Cluster</th><th>Status</th><th class="n">WMAPE</th><th class="n">Bias</th><th class="n">Empf.</th>
+        </tr></thead><tbody></tbody></table></div>
+      </div>
+      <div class="panel" id="detail"><p class="muted">Artikel links auswählen.</p></div>
+    </div>
+  </section>
+
+  <section id="acc">
+    <div class="panel"><h2>Prognosegüte je Cluster</h2>
+      <p class="note">Vergleich mit WBZ-Versatz: Ist-Monat gegen den Forecast, der „Lag“ Monate vorher abgegeben wurde. FVA &gt; 0 heißt: Die manuelle Anpassung hat den statistischen Wert verbessert.</p>
+      <table id="tcl"></table></div>
+    <div class="panel"><h2>Wirkung manueller Anpassungen</h2>
+      <p class="note">Monate, in denen der freigegebene Forecast um mehr als 5 % vom statistischen Wert abweicht. „Geholfen“: Der angepasste Wert lag näher am Ist.</p>
+      <table id="tadj"></table></div>
+  </section>
+
+  <section id="bt">
+    <div class="panel"><h2>Rückvergleich der Empfehlungen</h2>
+      <p class="note">Für jeden vergangenen Stichtag wurde die Voranalyse nur mit dem damals verfügbaren Wissen gerechnet und gegen das spätere Ist gehalten. Gezählt werden nur Fälle, in denen die Empfehlung den Zielmonat verändert hat. Daraus ergibt sich, welchen Regeln man trauen kann.</p>
+      <table id="thit"></table></div>
+  </section>
+
+  <section id="site">
+    <div class="panel"><h2>Bruttobedarf je Standort</h2>
+      <p class="note">Artikel-Forecast verteilt nach Länderanteil der letzten 12 Monate, Zuordnung über die Matrix Artikel × Land → Standort. Kein Netting gegen Bestand (nicht Teil des PoC).</p>
+      <div class="scroll"><table id="tsite"></table></div></div>
+  </section>
+
+  <section id="kb">
+    <div class="panel"><h2>Strukturierte Wissensbasis</h2>
+      <p class="note">Planungswissen als Regeln mit Quelle und Erfassungsdatum. Im Rückvergleich zählt eine Regel erst ab ihrem Erfassungsdatum.</p>
+      <table id="tkb"></table></div>
+  </section>
+
+  <section id="meth">
+    <div class="panel"><h2>Methodik und Grenzen</h2>
+      <ul>
+        <li><b>Statistik:</b> Nachbau der Excel-Fortschreibung (gewichteter AE3/AE6/AE12). Gewichte sind Platzhalter bis zum Reverse-Engineering.</li>
+        <li><b>Prognosegüte:</b> WMAPE = Σ|F−A| / ΣA, Bias = Σ(F−A) / ΣA, Vergleich mit WBZ-Versatz je Artikel.</li>
+        <li><b>Empfehlungen</b> setzen auf dem freigegebenen Forecast auf, nennen ihre Datenbasis und eine Konfidenz. Typen: Ausreißer/Peak, Run-Rate/Trend, systematischer Bias, Wissensregel (Projekt, Abkündigung).</li>
+        <li><b>Konfidenz</b> ist zunächst eine Heuristik. Die Trefferquote im Rückvergleich zeigt, wie gut sie tatsächlich ist.</li>
+        <li><b>Grenzen:</b> keine Mengen in Euro, kein Netting gegen Bestand, keine Szenarien. SAP IBP bleibt das führende System, die Entscheidung trifft der Planer.</li>
+      </ul>
+      <h2>Parameter dieses Laufs</h2>
+      <pre id="params" class="muted" style="white-space:pre-wrap;font-size:12px"></pre>
+    </div>
+  </section>
+</main>
+<script>
+const D = /*__DATA__*/null;
+const $ = s => document.querySelector(s);
+const fmt = (v, d=0) => v==null ? "–" : Number(v).toLocaleString("de-DE",{maximumFractionDigits:d, minimumFractionDigits:d});
+const pct = (v, sign=false) => v==null ? "–" : (sign && v>0 ? "+" : "") + (v*100).toLocaleString("de-DE",{maximumFractionDigits:0}) + " %";
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const STATUS = {"Wissensregel fehlt im Plan":"s-bad","Ausreißer-Verdacht":"s-warn","Abweichung erkannt":"s-warn","Empfehlung offen":"s-info","Unsicher (sporadisch)":"","Unauffällig":"s-ok"};
+const STUFE = {hoch:"s-ok", mittel:"s-info", niedrig:""};
+const TYP = {ausreisser:"Ausreißer / Peak", runrate:"Run-Rate / Trend", bias:"Systematischer Bias", wissen_projekt:"Wissensregel: Projekt", wissen_eol:"Wissensregel: Abkündigung"};
+
+// Planer-Feedback: nur im Browser dieses Nutzers, Export als CSV
+const FKEY = "pcpoc-feedback-" + D.meta.heute;
+let FB = {};
+try { FB = JSON.parse(localStorage.getItem(FKEY) || "{}"); } catch(e) {}
+const saveFB = () => { try { localStorage.setItem(FKEY, JSON.stringify(FB)); } catch(e) {} };
+
+$("#sub").textContent = `Stand ${D.meta.heute} · Ist bis ${D.meta.letzter_ist} · ${D.meta.artikel} Artikel · Kennzahlen über die letzten ${D.meta.fenster} Ist-Monate`;
+$("#synth").hidden = !D.meta.synthetisch;
+
+// KPIs
+(() => {
+  const t = D.kpi.total[0] || {}, b = D.kpi.backtest[0] || {};
+  const need = D.articles.filter(a => a.recs.length).length;
+  const k = [
+    ["WMAPE Statistik", pct(t.wmape_stat), "Excel-Fortschreibung"],
+    ["WMAPE freigegeben", pct(t.wmape_final), `Bias ${pct(t.bias_final, true)}`],
+    ["Wert manueller Anpassung", (t.fva>0?"+":"") + fmt((t.fva||0)*100,1) + " Pp.", "WMAPE Statistik − freigegeben"],
+    ["WMAPE mit Empfehlungen", pct(b.wmape_empf), "im Rückvergleich, gleiche Monate"],
+    ["Artikel mit Empfehlung", need + " / " + D.articles.length, "zum aktuellen Stand"],
+  ];
+  $("#kpis").innerHTML = k.map(([l,v,h]) => `<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="h">${h}</div></div>`).join("");
+})();
+
+// Tabs
+document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("#tabs button").forEach(x => x.classList.toggle("on", x===b));
+  document.querySelectorAll("main section").forEach(s => s.classList.toggle("on", s.id===b.dataset.t));
+});
+
+// Artikelliste
+const statuses = [...new Set(D.articles.map(a => a.status))];
+const clusters = [...new Set(D.articles.map(a => a.cluster))];
+$("#fs").innerHTML += statuses.map(s => `<option>${esc(s)}</option>`).join("");
+$("#fc").innerHTML += clusters.map(s => `<option>${esc(s)}</option>`).join("");
+const order = Object.keys(STATUS);
+let current = null;
+function renderList(){
+  const q = $("#q").value.toLowerCase(), fs = $("#fs").value, fc = $("#fc").value;
+  const rows = D.articles
+    .filter(a => (!q || a.article.toLowerCase().includes(q) || a.description.toLowerCase().includes(q)) && (!fs || a.status===fs) && (!fc || a.cluster===fc))
+    .sort((a,b) => order.indexOf(a.status) - order.indexOf(b.status) || a.article.localeCompare(b.article));
+  $("#tl tbody").innerHTML = rows.map(a => `<tr class="click ${current===a.article?"sel":""}" data-a="${esc(a.article)}">
+    <td><b>${esc(a.article)}</b><br><span class="muted">${esc(a.description)}</span></td>
+    <td>${esc(a.cluster)}</td><td><span class="chip ${STATUS[a.status]||""}">${esc(a.status)}</span></td>
+    <td class="n">${pct(a.wmape_final)}</td><td class="n">${pct(a.bias_final,true)}</td><td class="n">${a.recs.length||""}</td></tr>`).join("");
+  document.querySelectorAll("#tl tbody tr").forEach(tr => tr.onclick = () => { current = tr.dataset.a; renderList(); renderDetail(); });
+}
+["#q","#fs","#fc"].forEach(s => $(s).oninput = renderList);
+
+function chart(a){
+  const W = 640, H = 240, P = {l:48, r:10, t:10, b:28};
+  const n = a.months.length, S = a.series;
+  const all = Object.values(S).flat().filter(v => v!=null);
+  const max = Math.max(1, ...all) * 1.08;
+  const x = i => P.l + (W-P.l-P.r) * (i/(Math.max(n-1,1)));
+  const y = v => P.t + (H-P.t-P.b) * (1 - v/max);
+  const line = (vals, color, dash="", w=2) => {
+    let d = "", pen = false;
+    vals.forEach((v,i) => { if (v==null) { pen=false; return; } d += (pen?"L":"M") + x(i).toFixed(1) + " " + y(v).toFixed(1) + " "; pen = true; });
+    return d ? `<path d="${d}" fill="none" stroke="${color}" stroke-width="${w}" stroke-dasharray="${dash}" stroke-linejoin="round"/>` : "";
+  };
+  const hi = a.months.indexOf(a.heute);
+  let g = "";
+  for (let k=0;k<=4;k++){ const v = max*k/4; g += `<line x1="${P.l}" x2="${W-P.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${P.l-6}" y="${y(v)+4}" text-anchor="end">${fmt(v)}</text>`; }
+  a.months.forEach((m,i) => { if (i%3===0) g += `<text x="${x(i)}" y="${H-8}" text-anchor="middle">${m.slice(2)}</text>`; });
+  if (hi>=0) g += `<line x1="${x(hi)}" x2="${x(hi)}" y1="${P.t}" y2="${H-P.b}" stroke="var(--muted)" stroke-dasharray="2 3"/><text x="${x(hi)+4}" y="${P.t+10}">heute</text>`;
+  const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Verlauf ${esc(a.article)}">${g}
+    ${line(S.stat_damals, css("--stat"), "4 3", 1.5)}${line(S.final_damals, css("--final"), "", 1.5)}
+    ${line(S.ist, css("--ist"), "", 2.2)}${line(S.final, css("--final"), "", 2.2)}${line(S.empfohlen, css("--emp"), "5 3", 2.2)}</svg>
+    <div class="legend"><span><i style="border-color:var(--ist)"></i>Ist (AE)</span><span><i style="border-color:var(--final)"></i>freigegebener Forecast (damals mit Lag ${a.lag} M. / aktuell)</span>
+    <span><i style="border-color:var(--stat);border-top-style:dashed"></i>Statistik damals</span><span><i style="border-color:var(--emp);border-top-style:dashed"></i>Empfehlung</span></div>`;
+}
+
+function renderDetail(){
+  const a = D.articles.find(x => x.article===current); if (!a) return;
+  const recs = a.recs.map((r,i) => {
+    const key = a.article + "|" + r.typ, f = FB[key] || {};
+    return `<div class="rec"><div class="t">${esc(r.titel)} <span class="chip">${esc(TYP[r.typ]||r.typ)}</span>
+      <span class="chip ${STUFE[r.stufe]}">Konfidenz ${esc(r.stufe)} (${fmt(r.konfidenz*100)} %)</span></div>
+      <div>${esc(r.text)}</div><div class="b">Datenbasis: ${esc(r.basis)}</div>
+      <div class="act" data-k="${esc(key)}">
+        <button class="small ${f.e==="übernommen"?"on-ok":""}" data-e="übernommen">Übernehmen</button>
+        <button class="small ${f.e==="abgelehnt"?"on-bad":""}" data-e="abgelehnt">Ablehnen</button>
+        <input placeholder="Begründung / Wissen des Planers" value="${esc(f.c||"")}" style="flex:1;min-width:160px">
+      </div></div>`;
+  }).join("") || `<p class="muted">Keine Empfehlung. ${a.status==="Unsicher (sporadisch)" ? "Bedarf zu unregelmäßig für belastbare Aussagen." : ""}</p>`;
+  $("#detail").innerHTML = `<h2>${esc(a.article)} · ${esc(a.description)}</h2>
+    <div class="muted">${esc(a.product_group)} · Cluster ${esc(a.cluster)} · Bedarfsmuster ${esc(a.klasse)} · WBZ-Versatz ${a.lag} Monate</div>
+    ${chart(a)}
+    <table style="margin:6px 0 10px"><tr><th>Forecast nächste 12 Monate</th><th class="n">freigegeben</th><th class="n">mit Empfehlung</th><th class="n">Δ</th></tr>
+    <tr><td>Summe Stück</td><td class="n">${fmt(a.final_sum)}</td><td class="n">${fmt(a.empf_sum)}</td><td class="n">${pct(a.final_sum? a.empf_sum/a.final_sum-1 : null, true)}</td></tr></table>
+    ${a.signale.length ? `<b>Signale</b><ul class="sig">${a.signale.map(s => `<li>${esc(s)}</li>`).join("")}</ul>` : ""}
+    ${a.unmapped.length ? `<p class="chip s-bad">Länder ohne Matrix-Zuordnung: ${esc(a.unmapped.join(", "))}</p>` : ""}
+    <b>Empfehlungen</b>${recs}`;
+  document.querySelectorAll("#detail .act").forEach(div => {
+    const k = div.dataset.k;
+    div.querySelectorAll("button").forEach(b => b.onclick = () => { FB[k] = {...(FB[k]||{}), e: b.dataset.e, t: new Date().toISOString()}; saveFB(); renderDetail(); });
+    div.querySelector("input").onchange = ev => { FB[k] = {...(FB[k]||{}), c: ev.target.value, t: new Date().toISOString()}; saveFB(); };
+  });
+}
+
+$("#exp").onclick = () => {
+  const rows = [["Stand","Artikel","Typ","Entscheidung","Begruendung","Zeitpunkt"]];
+  Object.entries(FB).forEach(([k,v]) => { const [a,t] = k.split("|"); rows.push([D.meta.heute,a,t,v.e||"",v.c||"",v.t||""]); });
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(";")).join("\n");
+  const url = URL.createObjectURL(new Blob(["﻿"+csv], {type:"text/csv"}));
+  const l = document.createElement("a"); l.href = url; l.download = `planer-feedback-${D.meta.heute}.csv`; l.click();
+};
+
+// Güte
+$("#tcl").innerHTML = `<tr><th>Cluster</th><th class="n">Monate</th><th class="n">Ist Σ</th><th class="n">WMAPE Statistik</th><th class="n">WMAPE freigegeben</th><th class="n">Bias freigegeben</th><th class="n">FVA</th></tr>` +
+  D.cluster.map(c => `<tr><td>${esc(c.cluster)}</td><td class="n">${fmt(c.monate)}</td><td class="n">${fmt(c.ist)}</td><td class="n">${pct(c.wmape_stat)}</td><td class="n">${pct(c.wmape_final)}</td><td class="n">${pct(c.bias_final,true)}</td>
+  <td class="n"><span class="chip ${c.fva>0.01?"s-ok":c.fva<-0.01?"s-bad":""}">${(c.fva>0?"+":"")+fmt(c.fva*100,1)} Pp.</span></td></tr>`).join("");
+$("#tadj").innerHTML = `<tr><th>Cluster</th><th>Richtung</th><th class="n">Anpassungen</th><th>Geholfen</th></tr>` +
+  D.adjustments.map(r => `<tr><td>${esc(r.cluster)}</td><td>${esc(r.richtung)}</td><td class="n">${fmt(r.anzahl)}</td>
+  <td><div style="display:flex;gap:8px;align-items:center"><div class="bar" style="flex:1"><span style="width:${(r.geholfen*100).toFixed(0)}%"></span></div>${pct(r.geholfen)}</div></td></tr>`).join("");
+
+// Rückvergleich
+$("#thit").innerHTML = `<tr><th>Empfehlungstyp</th><th class="n">Fälle</th><th class="n">Artikel</th><th>Trefferquote</th><th class="n">WMAPE freigegeben</th><th class="n">WMAPE mit Empfehlung</th></tr>` +
+  (D.hits.length ? D.hits.map(h => `<tr><td>${esc(TYP[h.typ]||h.typ)}</td><td class="n">${fmt(h.faelle)}</td><td class="n">${fmt(h.artikel)}</td>
+  <td><div style="display:flex;gap:8px;align-items:center"><div class="bar" style="flex:1"><span style="width:${(h.trefferquote*100).toFixed(0)}%"></span></div>${pct(h.trefferquote)}</div></td>
+  <td class="n">${pct(h.wmape_final)}</td><td class="n"><span class="chip ${h.wmape_empfohlen<h.wmape_final?"s-ok":"s-bad"}">${pct(h.wmape_empfohlen)}</span></td></tr>`).join("") : `<tr><td colspan="6" class="muted">Kein Rückvergleich gerechnet.</td></tr>`);
+
+// Standorte
+(() => {
+  const months = [...new Set(D.sites.map(s => s.target))].sort();
+  const sites = [...new Set(D.sites.map(s => s.site))].sort();
+  const get = (s,m,k) => (D.sites.find(r => r.site===s && r.target===m) || {})[k];
+  $("#tsite").innerHTML = `<tr><th>Standort</th><th></th>${months.map(m => `<th class="n">${m}</th>`).join("")}</tr>` +
+    sites.map(s => `<tr><td rowspan="2"><b>${esc(s)}</b></td><td class="muted">freigegeben</td>${months.map(m => `<td class="n">${fmt(get(s,m,"final_qty"))}</td>`).join("")}</tr>
+    <tr><td class="muted">mit Empfehlung</td>${months.map(m => `<td class="n">${fmt(get(s,m,"empf_qty"))}</td>`).join("")}</tr>`).join("");
+})();
+
+// Wissensbasis
+$("#tkb").innerHTML = `<tr><th>ID</th><th>Typ</th><th>Bezug</th><th>ab</th><th>Inhalt</th><th>Quelle</th><th>erfasst</th></tr>` +
+  (D.knowledge.length ? D.knowledge.map(r => `<tr><td>${esc(r.id)}</td><td>${esc(r.typ)}</td><td>${esc(r.artikel||r.kunde||r.produktgruppe||"")}</td><td>${esc(r.ab||"")}</td>
+  <td>${esc(r.notiz||"")}${r.menge_pro_monat?` <span class="chip">${fmt(r.menge_pro_monat)} Stk./Monat</span>`:""}</td><td>${esc(r.quelle||"")}</td><td>${esc(r.erfasst_am||"")}<br><span class="muted">${esc(r.erfasst_von||"")}</span></td></tr>`).join("")
+  : `<tr><td colspan="7" class="muted">Keine Regeln erfasst.</td></tr>`);
+
+$("#params").textContent = JSON.stringify(D.meta.params, null, 2);
+const first = D.articles.slice().sort((a,b) => order.indexOf(a.status)-order.indexOf(b.status))[0];
+if (first) current = first.article;
+renderList(); renderDetail();
+</script>
+</body>
+</html>

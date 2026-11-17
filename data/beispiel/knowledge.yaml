@@ -1,0 +1,61 @@
+# Strukturierte Wissensbasis der Demand Planner (Beispiel)
+# Jede Regel hat Quelle und Erfassungsdatum, damit der Rückvergleich nur Wissen nutzt,
+# das zum jeweiligen Zeitpunkt schon bekannt war.
+regeln:
+- id: R-001
+  typ: projekt
+  artikel: A-1027
+  ab: 2025-07
+  menge_pro_monat: 600.0
+  quelle: Key Account / Vertrieb
+  erfasst_am: 2025-02
+  erfasst_von: Demand Planner
+  notiz: Hyperscaler-Rollout, Hochlauf über ca. 4 Monate ab 2025-07
+- id: R-002
+  typ: projekt
+  artikel: A-1028
+  ab: 2025-10
+  menge_pro_monat: 3020.0
+  quelle: Key Account / Vertrieb
+  erfasst_am: 2025-05
+  erfasst_von: Demand Planner
+  notiz: Hyperscaler-Rollout, Hochlauf über ca. 4 Monate ab 2025-10
+- id: R-003
+  typ: projekt
+  artikel: A-1029
+  ab: 2026-01
+  menge_pro_monat: 660.0
+  quelle: Key Account / Vertrieb
+  erfasst_am: 2025-08
+  erfasst_von: Demand Planner
+  notiz: Hyperscaler-Rollout, Hochlauf über ca. 4 Monate ab 2026-01
+- id: R-004
+  typ: eol
+  artikel: A-1037
+  ab: 2026-03
+  quelle: Produktmanagement
+  erfasst_am: 2025-03
+  erfasst_von: Demand Planner
+  notiz: Abkündigung, Nachfolger übernimmt; ab diesem Monat kein Bedarf mehr
+- id: R-005
+  typ: eol
+  artikel: A-1038
+  ab: 2026-02
+  quelle: Produktmanagement
+  erfasst_am: 2025-02
+  erfasst_von: Demand Planner
+  notiz: Abkündigung, Nachfolger übernimmt; ab diesem Monat kein Bedarf mehr
+- id: R-006
+  typ: lagerauffuellung
+  kunde: Distributor-DE
+  quelle: Erfahrung Demand Planning
+  erfasst_am: 2023-11
+  erfasst_von: Demand Planner
+  notiz: Distributor füllt unregelmäßig sein Lager auf; Einzelpeaks nicht fortschreiben
+- id: R-007
+  typ: lagerauffuellung
+  kunde: Distributor-FR
+  quelle: Erfahrung Demand Planning
+  erfasst_am: 2023-11
+  erfasst_von: Demand Planner
+  notiz: Distributor füllt unregelmäßig sein Lager auf; Einzelpeaks nicht fortschreiben
