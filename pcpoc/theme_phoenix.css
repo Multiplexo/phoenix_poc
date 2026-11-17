@@ -1,0 +1,74 @@
+/* =====================================================================
+   Theme "Phoenix Contact" für den Voranalyse-Bericht
+   ---------------------------------------------------------------------
+   Übernommen von phoenixcontact.com (Stand 17.11.2026), soweit lesbar:
+     - Design-Tokens heißen dort --color-blue, --color-gray-800, --color-white,
+       --default-border (aus dem HTML der Startseite)
+     - Kategorie-Überschriften in Versalien, Farbe gray-800
+     - Akzent (Badges, Zähler) in --color-blue auf Weiß, flache Flächen, dünne Rahmen
+     - Signalkette (Punkte/Pillen) als Kopfband: pcpoc/assets/signal-chain.svg,
+       daraus die exakten Markenfarben Petrol #009BA3 und Grün #93C11C
+   NICHT lesbar (Stylesheets der Seite liefern bei automatisiertem Abruf 403):
+     die Hausschrift. Wert mit "VORLÄUFIG" bei Bedarf aus dem CI-Leitfaden eintragen.
+   ===================================================================== */
+:root{
+  /* Farben aus der Signalkette der Website (signal-chain.svg): exakt */
+  --color-blue: #009ba3;        /* Petrol */
+  --color-blue-dark: #007a81;   /* abgedunkeltes Petrol für Text/Hover (Kontrast auf Weiß) */
+  --color-green: #93c11c;       /* Grün */
+  --color-green-dark: #6a8c14;  /* abgedunkelt, damit Linien auf Weiß lesbar bleiben */
+  --color-black: #000000;       /* Logo */
+  --color-gray-800: #333333;    /* Navigation "PRODUKTE", "INDUSTRIEN & APPLIKATIONEN" */
+  --color-gray-600: #666666;
+  --color-gray-200: #e3e3e3;
+  --color-gray-100: #f4f4f4;
+  --color-white: #ffffff;
+  --default-border: 1px solid var(--color-gray-200);
+  /* Navigation: fette, leicht gesperrte Grotesk in Versalien. Hausschrift unbekannt -> Roboto, falls installiert, sonst Arial. VORLÄUFIG */
+  --font: Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  --bg: var(--color-gray-100); --panel: var(--color-white); --ink: var(--color-gray-800);
+  --muted: var(--color-gray-600); --line: var(--color-gray-200); --accent: var(--color-blue-dark);
+  --ist: var(--color-gray-800); --final: var(--color-blue); --stat: #a0a0a0; --emp: var(--color-green-dark);
+  --neutral-bg: var(--color-gray-100);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#121417; --panel:#1b1e22; --ink:#e8e8e8; --muted:#a3a3a3; --line:#2e3238;
+    --accent:#6cc2c8; --final:#5bb3b9; --ist:#e8e8e8; --stat:#7c7c7c; --emp:#a8cf4a; --neutral-bg:#24282d;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121417; --panel:#1b1e22; --ink:#e8e8e8; --muted:#a3a3a3; --line:#2e3238;
+  --accent:#6cc2c8; --final:#5bb3b9; --ist:#e8e8e8; --stat:#7c7c7c; --emp:#a8cf4a; --neutral-bg:#24282d;
+}
+
+/* Layout im Stil der Website: weiße Kopfleiste, flache Flächen, kantige Ecken, Versal-Überschriften */
+body{font-family:var(--font)}
+/* Kopfleiste bleibt auch im Dunkelmodus weiß, weil das Logo in der Signalkette schwarz ist */
+.topbar{background:#ffffff;border-bottom:1px solid #e3e3e3}
+.topbar .brand{color:#333333}
+.topbar .brand small,.topbar .tag{color:#666666}
+.topbar-in{max-width:1280px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{font-weight:800;letter-spacing:.03em;text-transform:uppercase;font-size:14px;line-height:1.15;padding-left:16px;border-left:1px solid #e3e3e3}
+.brand small{display:block;font-weight:400;letter-spacing:0;text-transform:none;font-size:12px}
+.topbar .tag{margin-left:auto;font-size:12px}
+.accentline{display:none}
+/* Signalkette wie im Kopf der Website */
+.band{display:block;height:26px;width:auto;flex:none}
+@media (max-width:600px){.band{height:18px}}
+header{padding-top:24px}
+h1{font-size:26px;font-weight:700;letter-spacing:-.01em}
+.panel h2{text-transform:uppercase;letter-spacing:.04em;font-size:13px;color:var(--ink)}
+.kpi .l{text-transform:uppercase;letter-spacing:.04em;font-size:11px}
+.kpi{border-top:4px solid var(--color-blue)}
+.kpis .kpi:nth-child(4){border-top-color:var(--color-green)}
+.kpi,.panel,.rec,input,select,textarea,button.small,.banner{border-radius:2px}
+.chip{border-radius:2px}
+.bar,.bar span{border-radius:0}
+nav.tabs button{text-transform:uppercase;letter-spacing:.03em;font-size:13px;font-weight:700;color:var(--ink)}
+nav.tabs button.on{color:var(--accent);border-bottom-width:3px}
+button.small{font-weight:600}
+button.small:hover{border-color:var(--accent);color:var(--accent)}
+th{text-transform:uppercase;letter-spacing:.04em;font-size:11px}
+a{color:var(--accent)}

@@ -16,7 +16,7 @@ Prototyp zum Angebot **AG0021** („PoC zur KI-basierten Bedarfsplanung der BU P
 | Rückvergleich mit eingetretenen Bedarfen | Zeitreise über vergangene Stichtage, nur mit damals bekanntem Wissen; Trefferquote je Empfehlungstyp | `analysis.backtest` |
 | Abstimmung mit den Demand Plannern | HTML-Bericht mit „Übernehmen / Ablehnen + Begründung“, Export als CSV; Excel-Export mit Spalten für Entscheidung und Kommentar | `report.py` |
 
-Ergebnis eines Laufs ist **eine HTML-Datei** (offline, ohne Server, Hell/Dunkel) plus **eine Excel-Datei**:
+Ergebnis eines Laufs ist **eine HTML-Datei** (offline, ohne Server, Hell/Dunkel, im Phoenix-Contact-Layout, siehe [`docs/THEME.md`](docs/THEME.md)) plus **eine Excel-Datei**:
 
 ![Bericht](docs/bericht.png)
 
@@ -51,6 +51,7 @@ pcpoc/accuracy.py       Matching mit WBZ-Versatz, WMAPE, Bias, FVA
 pcpoc/analysis.py       Signale, Empfehlungen, Rückvergleich, Standortverteilung
 pcpoc/knowledge.py      Wissensbasis, optionale Extraktion aus Notizen
 pcpoc/report.py         HTML-Bericht und Excel-Export
+pcpoc/theme_phoenix.css Layout nach phoenixcontact.com (Farben, Signalkette); --theme neutral schaltet es ab
 pcpoc/synth.py          synthetische Beispieldaten mit bekannten Mustern
 docs/                   Abgleich Angebot/Briefing, PoC-Plan, Datenvertrag, offene Fragen
 ```

@@ -20,10 +20,11 @@ ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_PARAMS = ROOT / "config" / "params.yaml"
 
 
-def _run(folder: Path, params: Path, out: Path, cutoff: str | None, synthetic: bool, backtest: bool) -> None:
+def _run(folder: Path, params: Path, out: Path, cutoff: str | None, synthetic: bool, backtest: bool,
+         theme: str = "phoenix") -> None:
     ds = io.load_dataset(folder, params)
     rr = pipeline.run(ds, pd.Period(cutoff, "M") if cutoff else None, with_backtest=backtest)
-    html = report.write_html(rr, out / "voranalyse.html", synthetic=synthetic)
+    html = report.write_html(rr, out / "voranalyse.html", synthetic=synthetic, theme=theme)
     xlsx = report.write_excel(rr, out / "voranalyse.xlsx")
     t = rr.acc_total.iloc[0]
     print(f"Stand {rr.cutoff}: {len(rr.results)} Artikel, {sum(1 for r in rr.results if r.recs)} mit Empfehlung")
@@ -48,6 +49,7 @@ def main(argv=None) -> None:
     r.add_argument("--out", default="out", type=Path)
     r.add_argument("--stand", help="Stichtag YYYY-MM (Standard: jüngster Forecast-Stand)")
     r.add_argument("--ohne-rueckvergleich", action="store_true")
+    r.add_argument("--theme", default="phoenix", choices=["phoenix", "neutral"])
 
     s = sub.add_parser("synth", help="nur Beispieldaten erzeugen")
     s.add_argument("folder", type=Path)
@@ -65,7 +67,7 @@ def main(argv=None) -> None:
         synth.generate(folder, seed=a.seed)
         _run(folder, DEFAULT_PARAMS, a.out, None, True, True)
     elif a.cmd == "run":
-        _run(a.folder, a.params, a.out, a.stand, False, not a.ohne_rueckvergleich)
+        _run(a.folder, a.params, a.out, a.stand, False, not a.ohne_rueckvergleich, a.theme)
     elif a.cmd == "synth":
         print(synth.generate(a.folder, seed=a.seed))
     elif a.cmd == "wissen":

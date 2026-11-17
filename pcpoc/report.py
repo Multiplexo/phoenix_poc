@@ -10,6 +10,7 @@ import pandas as pd
 from .pipeline import RunResult
 
 TEMPLATE = Path(__file__).with_name("report_template.html")
+THEMES = {"phoenix": Path(__file__).with_name("theme_phoenix.css"), "neutral": None}
 
 
 def _num(x, nd=1):
@@ -89,9 +90,14 @@ def payload(rr: RunResult, synthetic: bool) -> dict:
     )
 
 
-def write_html(rr: RunResult, path: str | Path, synthetic: bool = False) -> Path:
+def write_html(rr: RunResult, path: str | Path, synthetic: bool = False, theme: str = "phoenix") -> Path:
     data = json.dumps(payload(rr, synthetic), ensure_ascii=False, default=str).replace("</", "<\\/")
-    html = TEMPLATE.read_text(encoding="utf-8").replace("/*__DATA__*/null", data)
+    css = THEMES[theme].read_text(encoding="utf-8") if THEMES.get(theme) else ""
+    band = ""
+    if theme == "phoenix":
+        svg = Path(__file__).with_name("assets").joinpath("signal-chain.svg").read_text(encoding="utf-8")
+        band = svg.replace("<svg ", '<svg class="band" aria-hidden="true" ', 1)
+    html = TEMPLATE.read_text(encoding="utf-8").replace("/*__THEME__*/", css).replace("<!--__BAND__-->", band).replace("/*__DATA__*/null", data)
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(html, encoding="utf-8")
