@@ -18,6 +18,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from . import favicon
 from .pipeline import RunResult
 
 KUNDE = "Phoenix Contact Power Supplies · BU Paderborn"
@@ -253,7 +254,7 @@ def write_html(spec: dict, path: str | Path, bericht_png: Path | None = None) ->
                   wortmarke=_data_uri(a / "wortmarke_weiss.svg", "image/svg+xml"), bilder=bilder)
     html = (DECK_DIR / "deck_template.html").read_text(encoding="utf-8")
     js = lambda o: json.dumps(o, ensure_ascii=False, default=str).replace("</", "<\\/")
-    html = (html.replace("/*__TITLE__*/", spec["titel"]).replace("/*__FONTS__*/", fonts)
+    html = (html.replace("<!--__FAVICON__-->", favicon.head_tags()).replace("/*__TITLE__*/", spec["titel"]).replace("/*__FONTS__*/", fonts)
             .replace("/*__SPEC__*/null", js(spec)).replace("/*__ASSETS__*/null", js(assets)))
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
@@ -272,7 +273,7 @@ def write_pptx(spec_json: Path, out: Path) -> Path | None:
 
 
 INDEX = """<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex,nofollow"><title>Präsentationen</title><style>__FONTS__
+<meta name="robots" content="noindex,nofollow">__FAVICON__<title>Präsentationen</title><style>__FONTS__
 :root{--bg:#F5F3EE;--panel:#fff;--ink:#101D35;--muted:#4D5A6E;--gold:#7A5C24;--line:#e3dfd5;--accent:#101D35}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#101D35;--panel:#182540;--ink:#F5F3EE;--muted:#A3AEBF;--gold:#CBA76A;--line:#3A4558;--accent:#16C8DB}}
 :root[data-theme="dark"]{--bg:#101D35;--panel:#182540;--ink:#F5F3EE;--muted:#A3AEBF;--gold:#CBA76A;--line:#3A4558;--accent:#16C8DB}
@@ -299,7 +300,7 @@ def write_index(out: Path, specs: list[dict]) -> Path:
         if f.exists():
             fonts += f'@font-face{{font-family:"Montserrat";font-weight:{w};src:url({_data_uri(f, "font/woff2")}) format("woff2")}}'
     p = out / "index.html"
-    p.write_text(INDEX.replace("__ITEMS__", items).replace("__FONTS__", fonts), encoding="utf-8")
+    p.write_text(INDEX.replace("__FAVICON__", favicon.head_tags()).replace("__ITEMS__", items).replace("__FONTS__", fonts), encoding="utf-8")
     return p
 
 

@@ -29,6 +29,7 @@ ENV PORT=10000
 COPY deploy/default.conf.template /etc/nginx/templates/default.conf.template
 COPY deploy/40-basic-auth.sh /docker-entrypoint.d/40-basic-auth.sh
 COPY deploy/gesperrt.html /usr/share/nginx/locked/index.html
+COPY pcpoc/assets/favicon/ /usr/share/nginx/icons/
 COPY --from=build /app/out/voranalyse.html /usr/share/nginx/html/index.html
 COPY --from=build /app/out/voranalyse.xlsx /usr/share/nginx/html/voranalyse.xlsx
 COPY --from=pptx /app/out/praesentationen /usr/share/nginx/html/praesentationen

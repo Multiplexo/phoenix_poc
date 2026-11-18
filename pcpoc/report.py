@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from . import favicon
 from .pipeline import RunResult
 
 TEMPLATE = Path(__file__).with_name("report_template.html")
@@ -97,7 +98,7 @@ def write_html(rr: RunResult, path: str | Path, synthetic: bool = False, theme: 
     if theme == "phoenix":
         svg = Path(__file__).with_name("assets").joinpath("signal-chain.svg").read_text(encoding="utf-8")
         band = svg.replace("<svg ", '<svg class="band" aria-hidden="true" ', 1)
-    html = TEMPLATE.read_text(encoding="utf-8").replace("/*__THEME__*/", css).replace("<!--__BAND__-->", band).replace("/*__DATA__*/null", data)
+    html = TEMPLATE.read_text(encoding="utf-8").replace("<!--__FAVICON__-->", favicon.head_tags()).replace("/*__THEME__*/", css).replace("<!--__BAND__-->", band).replace("/*__DATA__*/null", data)
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(html, encoding="utf-8")

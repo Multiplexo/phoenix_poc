@@ -20,6 +20,14 @@ server {
         return 200 "ok\n";
     }
 
+    # Favicon ohne Passwort, damit der Browser es auch auf der Anmeldeseite zeigt
+    location ~ ^/(favicon\.ico|apple-touch-icon\.png|icon-192\.png|icon-512\.png)$ {
+        auth_basic off;
+        root /usr/share/nginx/icons;
+        access_log off;
+        add_header Cache-Control "public, max-age=604800";
+    }
+
     location = /robots.txt {
         auth_basic off;
         return 200 "User-agent: *\nDisallow: /\n";
