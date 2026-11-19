@@ -1,0 +1,8 @@
+{% extends "planung/base.html" %}
+{% block title %}Protokoll{% endblock %}
+{% block content %}
+<h1>Protokoll</h1>
+<div class="sub">Wer hat wann was geändert, importiert oder freigegeben (letzte 300 Einträge).</div>
+<div class="panel"><table><tr><th>Am</th><th>Von</th><th>Objekt</th><th>Aktion</th><th>Details</th></tr>
+{% for e in eintraege %}<tr><td>{{ e.am|date:"d.m.Y H:i" }}</td><td>{{ e.von }}</td><td>{{ e.objekt }}</td><td>{{ e.aktion }}</td><td class="muted">{{ e.details }}</td></tr>{% endfor %}</table></div>
+{% endblock %}

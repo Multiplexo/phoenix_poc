@@ -1,0 +1,121 @@
+{% extends "planung/base.html" %}{% load planung_tags %}
+{% block title %}{{ a.nummer }}{% endblock %}
+{% block content %}
+<div class="toolbar"><a href="{% url 'uebersicht' %}">← Übersicht</a></div>
+<h1>{{ a.nummer }} · {{ a.bezeichnung }}</h1>
+<div class="sub">{{ a.produktgruppe }} · Cluster <b>{{ a.cluster }}</b>{% if a.cluster_quelle == "planer" %} (vom Planer gesetzt){% endif %} · WBZ-Versatz {{ lag }} Monate
+  {% if vs %} · Vorschlag vom {{ vs.lauf.erstellt_am|date:"d.m.Y H:i" }} ({{ vs.lauf.get_anlass_display }}) <span class="chip {% if vs.status == 'freigegeben' %}ok{% elif vs.status == 'abgelehnt' %}bad{% else %}info{% endif %}">{{ vs.get_status_display }}</span>{% endif %}</div>
+
+<div class="grid3">
+<div>
+  <div class="panel"><h2>Forecast und Ist</h2>
+    <div data-chart="chart-data"></div>{{ chart|json_script:"chart-data" }}
+  </div>
+
+  <div class="panel"><h2>Brutto → Netto je Standort</h2>
+    {% if vs %}
+    <p class="note">Rechnung: {{ vs.erklaerung.rechnung }} · Wachstum {{ vs.erklaerung.wachstum_pa|pct:"s" }} p. a. ({{ vs.erklaerung.wachstum_quelle }})
+      {% if vs.erklaerung.bereinigt %} · bereinigte Monate: {{ vs.erklaerung.bereinigt|join:", " }}{% endif %}</p>
+    {% for site, zs in tabelle.items %}
+      {% with s=summen|get:site b=vs.erklaerung.bestand|get:site %}
+      <h3 style="font-size:14px;margin:14px 0 4px">{{ site|default:"Artikelebene" }}</h3>
+      <div class="flow"><span>Statistik <b>{{ s.stat|stk }}</b></span><span class="op">+ Wachstum</span><b>{{ s.wachstum|stk }}</b><span class="op">+ Projekte</span><b>{{ s.projekt|stk }}</b>
+        <span class="op">= Brutto</span><b>{{ s.brutto|stk }}</b><span class="op">− verfügbarer Bestand</span><b>{{ s.abzug|stk }}</b><span class="op">= Netto</span><b>{{ s.netto|stk }}</b></div>
+      {% if b %}<p class="note" style="margin-top:4px">Bestand {{ b.bestand|stk }} · Transit {{ b.transit|stk }} · Intercompany {{ b.intercompany|stk }} · Sicherheitsbestand {{ vs.erklaerung.sicherheitsbestand|get:site|stk }}</p>{% endif %}
+      <div class="scroll"><table>
+        <tr><th></th>{% for z in zs %}<th class="n">{{ z.monat|ml }}</th>{% endfor %}</tr>
+        <tr><td>Statistik</td>{% for z in zs %}<td class="n">{{ z.stat|stk }}</td>{% endfor %}</tr>
+        <tr><td>+ Wachstum</td>{% for z in zs %}<td class="n">{{ z.wachstum|stk }}</td>{% endfor %}</tr>
+        <tr><td>+ Projekte</td>{% for z in zs %}<td class="n">{{ z.projekt|stk }}</td>{% endfor %}</tr>
+        <tr><td><b>Brutto</b></td>{% for z in zs %}<td class="n"><b>{{ z.brutto|stk }}</b></td>{% endfor %}</tr>
+        <tr><td>− Bestand</td>{% for z in zs %}<td class="n">{{ z.abzug_bestand|stk }}</td>{% endfor %}</tr>
+        <tr><td><b>Netto</b></td>{% for z in zs %}<td class="n"><b>{{ z.netto|stk }}</b></td>{% endfor %}</tr>
+      </table></div>
+      {% endwith %}
+    {% endfor %}
+    {% else %}<p class="muted">Noch kein Forecast. Unter „Läufe“ einen Lauf starten.</p>{% endif %}
+  </div>
+
+  <div class="panel"><h2>Voranalyse: Empfehlungen mit Datenbasis</h2>
+    {% for r in recs %}
+      <div class="rec"><div class="t">{{ r.titel }} <span class="chip {% if r.stufe == 'hoch' %}ok{% elif r.stufe == 'mittel' %}info{% endif %}">Konfidenz {{ r.stufe }}</span></div>
+      <div>{{ r.text }}</div><div class="b">Datenbasis: {{ r.basis }}</div></div>
+    {% empty %}<p class="muted">Keine Auffälligkeiten, die eine Anpassung nahelegen.</p>{% endfor %}
+    <p class="note">Empfehlungen sind Vorschläge. Der Planer entscheidet über Parameter, Projektmengen und Ausreißer.</p>
+  </div>
+</div>
+
+<div>
+  <div class="panel"><h2>Freigabe</h2>
+    {% if vs %}
+      <dl class="kv"><dt>Vorschlag</dt><dd>Lauf {{ vs.lauf_id }} · {{ vs.get_status_display }}</dd>
+        <dt>Brutto / Netto</dt><dd>{{ vs.brutto_summe|stk }} / {{ vs.netto_summe|stk }} Stk.</dd>
+        {% if vs.freigabe1_von %}<dt>Stufe 1</dt><dd>{{ vs.freigabe1_von }}, {{ vs.freigabe1_am|date:"d.m.Y H:i" }}</dd>{% endif %}
+        {% if vs.freigabe2_von %}<dt>Stufe 2</dt><dd>{{ vs.freigabe2_von }}, {{ vs.freigabe2_am|date:"d.m.Y H:i" }}</dd>{% endif %}
+        {% if fg and fg.id != vs.id %}<dt>Gültig freigegeben</dt><dd>Lauf {{ fg.lauf_id }} · {{ fg.brutto_summe|stk }} Stk. brutto</dd>{% endif %}
+      </dl>
+      {% if vs.kommentar %}<pre>{{ vs.kommentar }}</pre>{% endif %}
+      {% if freigabe_moeglich.einreichen or freigabe_moeglich.freigeben or freigabe_moeglich.ablehnen %}
+      <form method="post" style="margin-top:10px">{% csrf_token %}<input type="hidden" name="af" value="{{ vs.id }}">
+        <input name="kommentar" placeholder="Kommentar (optional)" style="width:100%;margin-bottom:6px">
+        {% if freigabe_moeglich.einreichen %}<button class="p" name="aktion" value="einreichen">Zur Freigabe einreichen</button>{% endif %}
+        {% if freigabe_moeglich.freigeben %}<button class="p" name="aktion" value="freigeben">{% if vs.status == 'freigegeben_1' %}Freigeben (Stufe 2){% else %}Freigeben{% endif %}</button>{% endif %}
+        {% if freigabe_moeglich.ablehnen %}<button class="d" name="aktion" value="ablehnen">Ablehnen</button>{% endif %}
+      </form>{% elif vs.status == 'freigegeben_1' %}<p class="note">Wartet auf Stufe 2 durch eine andere Person.</p>{% endif %}
+      <p class="note" style="margin-top:8px">Freigabe-Workflow {% if features.freigabe %}an{% else %}aus{% endif %} · zweite Stufe {% if features.zweite_stufe %}an{% else %}aus{% endif %} · Rollen {% if features.rollen %}an{% else %}aus{% endif %}</p>
+    {% endif %}
+    <form method="post" style="margin-top:6px">{% csrf_token %}<button name="aktion" value="neu">Neu rechnen</button></form>
+  </div>
+
+  <div class="panel"><h2>Forecast Accuracy (12 Monate)</h2>
+    <dl class="kv"><dt>MAPE</dt><dd>{{ k.mape|pct }}</dd><dt>WMAPE</dt><dd>{{ k.wmape|pct }}</dd><dt>Bias</dt><dd>{{ k.bias|pct:"s" }}</dd>
+      <dt>Statistik (WMAPE)</dt><dd>{{ k.wmape_stat|pct }}</dd><dt>Wert der Anpassung</dt><dd>{{ k.fva|pp }}</dd><dt>Monate</dt><dd>{{ k.n }}</dd></dl>
+  </div>
+
+  <div class="panel"><h2>Hinweise</h2>
+    {% for s in signale %}<div class="rec"><span class="chip {% if s.offen %}{% if s.art == 'ausreisser' %}warn{% else %}bad{% endif %}{% endif %}">{{ s.get_art_display }}{% if not s.offen %} · erledigt{% endif %}</span>
+      <div>{{ s.text }}</div><div class="b">{{ s.erstellt_am|date:"d.m.Y H:i" }}{% if s.erledigt_von %} · erledigt von {{ s.erledigt_von }}{% endif %}</div>
+      {% if s.offen and s.art != 'ausreisser' %}<form method="post" action="{% url 'hinweise' %}">{% csrf_token %}<input type="hidden" name="id" value="{{ s.id }}"><input type="hidden" name="zurueck" value="{{ request.path }}"><button>Als erledigt markieren</button></form>{% endif %}</div>
+    {% empty %}<p class="muted">Keine Hinweise.</p>{% endfor %}
+  </div>
+
+  <div class="panel"><h2>Ausreißer</h2>
+    <p class="note">Ausreißer werden nur geflaggt. Bereinigt wird erst, wenn der Planer entscheidet.</p>
+    {% for o in offene_ausreisser %}
+      <form method="post" class="rec">{% csrf_token %}<input type="hidden" name="aktion" value="ausreisser"><input type="hidden" name="monat" value="{{ o.monat }}">
+        <b>{{ o.monat }}</b>: {{ o.wert|stk }} Stk. (Schnitt {{ o.schnitt|stk }})<br>
+        <input name="notiz" placeholder="Begründung, z. B. Lagerauffüllung Distributor" style="width:100%;margin:6px 0">
+        <button class="p" name="entscheidung" value="bereinigen">Bereinigen</button> <button name="entscheidung" value="behalten">Behalten</button></form>
+    {% endfor %}
+    {% for e in entscheidungen %}<div class="note">{{ e.monat|date:"m/Y" }}: {{ e.get_entscheidung_display }} · {{ e.von }} {{ e.am|date:"d.m.Y" }}{% if e.notiz %} · {{ e.notiz }}{% endif %}</div>
+    {% empty %}{% if not offene_ausreisser %}<p class="muted">Keine Ausreißer-Verdachte.</p>{% endif %}{% endfor %}
+  </div>
+
+  <div class="panel"><h2>Parameter</h2>
+    <form method="post">{% csrf_token %}<input type="hidden" name="aktion" value="parameter">
+      <div class="formrow"><label>Cluster<select name="cluster">{% for c in clusters %}<option {% if c == a.cluster %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></label>
+        <label>Wachstum % p. a. (Artikel)<input name="wachstum" size="6" placeholder="z. B. 10"></label></div>
+      <div class="formrow"><label>Beschlossen von<input name="beschlossen_von" placeholder="Planer / MEB" size="14"></label><label>Notiz<input name="notiz" size="18"></label></div>
+      <button class="p">Speichern und neu rechnen</button></form>
+    <p class="note" style="margin-top:8px">Gültige Wachstumsannahmen:</p>
+    {% for w in wachstum %}<div class="note">{{ w.get_ebene_display }} {{ w.schluessel }}: <b>{{ w.wachstum_pa|pct:"s" }}</b> ab {{ w.gueltig_ab|date:"m/Y" }} · {{ w.beschlossen_von }}</div>{% endfor %}
+    {% if wachstum %}<form method="post">{% csrf_token %}<input type="hidden" name="aktion" value="parameter"><input type="hidden" name="wachstum_entfernen" value="1"><button>Artikel-Wachstum entfernen</button></form>{% endif %}
+  </div>
+
+  <div class="panel"><h2>Projektmengen</h2>
+    {% for p in projekte %}<form method="post" class="rec">{% csrf_token %}<input type="hidden" name="aktion" value="projekt_entfernen"><input type="hidden" name="id" value="{{ p.id }}">
+      <b>{{ p.menge_pro_monat|stk }} Stk./Monat</b> ab {{ p.ab|date:"m/Y" }}{% if p.bis %} bis {{ p.bis|date:"m/Y" }}{% endif %} · {{ p.standort|default:"anteilig" }}
+      <div class="b">{{ p.quelle }}{% if p.notiz %} · {{ p.notiz }}{% endif %} · {{ p.erfasst_von }}</div><button class="d">Entfernen</button></form>
+    {% empty %}<p class="muted">Keine Projektmengen.</p>{% endfor %}
+    <form method="post">{% csrf_token %}<input type="hidden" name="aktion" value="projekt_neu">
+      <div class="formrow"><label>Menge/Monat<input name="menge" size="7" required></label><label>ab<input type="month" name="ab" required></label><label>bis<input type="month" name="bis"></label></div>
+      <div class="formrow"><label>Standort<select name="standort"><option value="">anteilig</option>{% for s in standorte %}<option>{{ s }}</option>{% endfor %}</select></label><label>Quelle<input name="quelle" size="12" placeholder="Key Account"></label></div>
+      <div class="formrow"><label>Notiz<input name="notiz" size="28"></label><button class="p">Hinzufügen</button></div></form>
+  </div>
+
+  <div class="panel"><h2>Versionen</h2>
+    <table>{% for v in versionen %}<tr><td>Stand {{ v.lauf.stichtag_monat|date:"m/Y" }}<br><span class="muted">{{ v.lauf.get_anlass_display }}{% if v.lauf.anlass != "historie" %} · {{ v.lauf.erstellt_am|date:"d.m. H:i" }}{% endif %}</span></td><td>{{ v.get_status_display }}</td><td class="n">{{ v.brutto_summe|stk }}</td></tr>{% endfor %}</table>
+  </div>
+</div>
+</div>
+{% endblock %}

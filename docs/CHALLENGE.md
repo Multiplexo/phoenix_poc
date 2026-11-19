@@ -4,6 +4,8 @@
 - Angebot AG0021 vom 21.10.2026, „PoC zur KI-basierten Bedarfsplanung der BU Paderborn“, Phoenix Contact Power Supplies GmbH. Von Ender Ilgaz am 17.11.2026 digital gezeichnet.
 - „Developer Briefing – Phoenix Contact Forecasting MVP“.
 
+> **Entscheidung 19.11.2026:** Der Prototyp soll das Entwickler-Briefing vollständig abdecken. Die Plattform (`plattform/`) setzt deshalb jetzt auch Generator mit Netting, Freigabe-Workflow und Loop um (siehe `BRIEFING_ABDECKUNG.md`). Die Abweichungen unten bleiben als Argumentation für die Gespräche mit Phoenix gültig, vor allem zu Umfang, Budget und Rolle von SAP IBP.
+
 **Kernaussage:** Das gezeichnete Angebot ist der verbindliche Rahmen, nicht das Briefing. Beide passen nur teilweise zusammen. Das Briefing beschreibt einen Excel-Ersatz: Forecast-Generator je Standort, Netting, Freigabe-Plattform. Das Angebot beschreibt eine **ergänzende Entscheidungshilfe vor der Umstellung auf SAP IBP**: Es geht um Prognosegüte, die Wirkung manueller Anpassungen, gesichertes Planungswissen sowie Empfehlungen mit Datenbasis und Konfidenz. Der Prototyp in diesem Repo folgt dem Angebot. Teile aus dem Briefing übernimmt er nur, wo sie dem Angebot dienen.
 
 ---

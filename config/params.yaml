@@ -8,8 +8,23 @@ baseline:
   # der letzten 3 / 6 / 12 Monate. Gewichte müssen sich zu 1 summieren.
   gewichte: {ae3: 0.5, ae6: 0.3, ae12: 0.2}
   horizont_monate: 12
-  # pauschales Marktwachstum p. a. (Market Evaluation Board), wird je Monat anteilig aufgeschlagen
+  # pauschales Marktwachstum p. a. (Market Evaluation Board), wird je Monat anteilig aufgeschlagen.
+  # Überschreibbar je Produktgruppe und je Artikel (Plattform: Parameter).
   marktwachstum_pa: 0.0
+  # Cluster-Sonderlogik der Fortschreibung (Briefing: Hyperscaler, Ramp-Up/-Down weichen ab)
+  cluster:
+    standard:     {methode: gewichtet}
+    hyperscaler:  {methode: runrate}                         # AE3 trägt den Hochlauf; Projektmengen kommen dazu
+    ramp_up:      {methode: trend, max_wachstum_monat: 0.08} # AE3 mit Trend der letzten 6 Monate fortgeschrieben
+    ramp_down:    {methode: abklingend, faktor_monat: 0.88}  # AE3, je Monat abklingend
+    intermittent: {methode: ae12}                            # sporadisch: Jahresdurchschnitt
+    unbekannt:    {methode: gewichtet}
+
+netting:
+  # Bruttobedarf je Standort wird gegen verfügbaren Bestand gerechnet (Brutto -> Netto).
+  bestandsarten: [bestand, transit, intercompany]
+  # Sicherheitsbestand in Monaten Bruttobedarf, der nicht verbraucht werden darf
+  sicherheitsbestand_monate: 0.5
 
 accuracy:
   # WBZ-Offset: Ist-Monat m wird gegen den Forecast verglichen, der in Monat m - lag abgegeben wurde.
@@ -27,6 +42,17 @@ signale:
   ausreisser_robust_z: 3.5
   # Konzentration: Anteil des Peaks bei einem Land/Kunden, ab dem der Verdacht "Lagerauffüllung" stark ist
   ausreisser_konzentration: 0.7
+  # Regel aus dem Briefing: Monat > 300 % über dem 12-Monats-Schnitt -> Ausreißer-Verdacht (flaggen, nicht bereinigen)
+  ausreisser_briefing_faktor: 3.0
+  # Ping: kumulierte Abweichung des Ist vom freigegebenen Forecast über die letzten N Tage
+  ping_tage: 14
+  ping_schwelle: 0.20
+  ping_min_stueck: 30          # kleinere absolute Abweichungen lösen keinen Ping aus
+  # Neuberechnung nach Ping: dieser Anteil der beobachteten Abweichung geht in die nächsten N Monate ein
+  ping_korrektur_anteil: 0.5
+  ping_korrektur_monate: 3
+  # nur Einzelpeaks flaggen: Monat muss auch die Nachbarmonate um diesen Faktor übersteigen (sonst Niveauwechsel/Ramp)
+  ausreisser_einzelpeak_faktor: 2.0
   # Intermittenz-Klassifikation nach Syntetos/Boylan
   adi_grenze: 1.32
   cv2_grenze: 0.49

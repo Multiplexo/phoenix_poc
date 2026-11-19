@@ -1,0 +1,34 @@
+{% extends "planung/base.html" %}
+{% block title %}Import{% endblock %}
+{% block content %}
+<h1>Import</h1>
+<div class="sub">Datei-Upload aus SAP (CSV, Excel oder XML). Quelle: <b>{{ datenquelle }}</b>. Die REST-Schnittstelle <code>/api/v1/import/&lt;art&gt;</code> ist vorbereitet und nutzt denselben Import.</div>
+<div class="grid2">
+<div class="panel"><h2>Datei hochladen</h2>
+  <form method="post" enctype="multipart/form-data">{% csrf_token %}
+    <div class="formrow"><label>Art<select name="art">{% for k, v in arten %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></label>
+      <label>Stand des Exports<input type="date" name="stand" value="{{ heute|date:'Y-m-d' }}"></label></div>
+    <div class="formrow"><label>Datei<input type="file" name="datei" accept=".csv,.xlsx,.xls,.xml" required></label></div>
+    <div class="formrow"><label style="flex-direction:row;gap:6px"><input type="checkbox" name="loop" value="1" checked> nach DTO-Import: Soll-Ist abgleichen, Abweichungen prüfen, betroffene Artikel neu rechnen</label></div>
+    <div class="formrow"><label style="flex-direction:row;gap:6px"><input type="checkbox" name="lauf" value="1"> zusätzlich Forecast-Lauf für alle Artikel (Monatslauf)</label></div>
+    <div class="formrow"><label>Bezeichnung (nur Matrix, z. B. Q1/2027)<input name="bezeichnung" size="12"></label></div>
+    <button class="p">Importieren</button>
+  </form>
+</div>
+<div class="panel"><h2>Erwartete Spalten</h2>
+  <dl class="kv">
+    <dt>DTO</dt><dd>Datum, Material, Land, Kunde, Menge (SAP-Namen wie ERDAT, MATNR, LAND1, KUNNR, KWMENG werden erkannt). Ein erneuter Export ersetzt den Zeitraum.</dd>
+    <dt>Bestand</dt><dd>Material, Standort, Art (bestand / transit / intercompany), Menge</dd>
+    <dt>Matrix</dt><dd>Material (oder * für alle), Land, Standort → neue Matrix-Version</dd>
+    <dt>Artikelstamm</dt><dd>Material, Bezeichnung, Produktgruppe, Cluster, WBZ in Monaten</dd>
+    <dt>Historie</dt><dd>Forecast-Stand, Material, Zielmonat, Statistik, Final (freigegeben)</dd>
+  </dl>
+  <p class="note">Details: docs/DATENVERTRAG.md</p>
+</div>
+</div>
+<div class="panel"><h2>Letzte Importe</h2>
+  <table><tr><th>Am</th><th>Art</th><th>Quelle</th><th>Datei</th><th>Stand</th><th class="n">Zeilen</th><th>Von</th><th>Meldungen</th></tr>
+  {% for i in laeufe %}<tr><td>{{ i.am|date:"d.m.Y H:i" }}</td><td>{{ i.get_art_display }}</td><td>{{ i.quelle }}</td><td>{{ i.dateiname }}</td><td>{{ i.stand|date:"d.m.Y" }}</td><td class="n">{{ i.zeilen }}</td><td>{{ i.von }}</td><td class="muted">{{ i.meldungen|linebreaksbr }}</td></tr>
+  {% empty %}<tr><td colspan="8" class="muted">Noch keine Importe.</td></tr>{% endfor %}</table>
+</div>
+{% endblock %}

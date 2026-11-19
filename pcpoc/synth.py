@@ -42,8 +42,12 @@ def _season(m: pd.Period) -> float:
     return 1 + 0.08 * np.sin(2 * np.pi * (m.month - 2) / 12)
 
 
-def generate(out: str | Path, seed: int = 7, params: dict | None = None) -> Path:
+def generate(out: str | Path, seed: int = 7, params: dict | None = None, laufender_monat_bis_tag: int | None = None) -> Path:
+    """laufender_monat_bis_tag: zusätzlich Auftragseingang des laufenden Monats bis zu diesem Tag erzeugen
+    (für die Plattform: Abweichungs-Ping über 14 Tage), dazu Bestände/Transit/Intercompany (stock.csv)."""
     rng = np.random.default_rng(seed)
+    rng2 = np.random.default_rng(seed + 1000)  # eigener Zufallsstrom, damit die Basisdaten unverändert bleiben
+    stock_rows, site_share = [], {}
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
     months = pd.period_range(START, periods=N_MONTHS, freq="M")
@@ -133,6 +137,33 @@ def generate(out: str | Path, seed: int = 7, params: dict | None = None) -> Path
                     vals[i] += peak["qty"]
         true[art] = pd.Series(vals, index=months)
         meta[art] = info
+        sh = {}
+        for c, sc in zip(ctys, shares):
+            site = "Nanjing" if c in ASIA else "Deutschland"
+            if k % 6 == 0 and c == "US":
+                site = "Deutschland"
+            sh[site] = sh.get(site, 0) + sc
+        site_share[art] = sh
+
+        if laufender_monat_bis_tag:
+            m = last + 1
+            # Nachfrageschub bei einigen Standardartikeln: "der Markt läuft weg"
+            surge = 1.0
+            if cluster == "standard" and j in (3, 11):
+                surge = 1.7
+                info["schub_laufender_monat"] = surge
+            base = float(np.mean(vals[-3:])) if cluster != "intermittent" else 0.0
+            for c, sc in zip(ctys, shares):
+                q = int(round(base * sc * surge * laufender_monat_bis_tag / m.days_in_month * rng2.lognormal(0, 0.08)))
+                if q <= 0:
+                    continue
+                n = int(min(q, 1 + rng2.poisson(2)))
+                parts = rng2.multinomial(q, np.ones(n) / n)
+                days = rng2.integers(1, laufender_monat_bis_tag + 1, n)
+                for pq, d in zip(parts, days):
+                    if pq > 0:
+                        dto_rows.append(dict(date=f"{m.year}-{m.month:02d}-{int(d):02d}", article=art, country=c,
+                                             customer=f"K-{c}-{int(rng2.integers(1, 4))}", qty=int(pq)))
 
     # Matrix-Standardregeln
     for c in COUNTRIES:
@@ -191,6 +222,17 @@ def generate(out: str | Path, seed: int = 7, params: dict | None = None) -> Path
                 fc_rows.append(dict(snapshot=str(s), article=a, target=str(t), stat_qty=round(float(stat[t]), 1),
                                     final_qty=round(float(max(final[t], 0)), 1)))
 
+    if laufender_monat_bis_tag:
+        stand = f"{(last + 1).year}-{(last + 1).month:02d}-{laufender_monat_bis_tag:02d}"
+        for a, sh in site_share.items():
+            avg = float(true[a].iloc[-3:].mean())
+            for site, sc in sh.items():
+                bedarf = avg * sc
+                stock_rows.append(dict(date=stand, article=a, site=site, art="bestand", qty=int(bedarf * rng2.uniform(0.3, 2.5))))
+                stock_rows.append(dict(date=stand, article=a, site=site, art="transit", qty=int(bedarf * rng2.uniform(0.0, 0.8))))
+                if site == "Nanjing" and rng2.random() < 0.3:
+                    stock_rows.append(dict(date=stand, article=a, site=site, art="intercompany", qty=int(bedarf * rng2.uniform(0.2, 0.6))))
+        pd.DataFrame(stock_rows).to_csv(out / "stock.csv", index=False)
     pd.DataFrame(articles).to_csv(out / "articles.csv", index=False)
     pd.DataFrame(matrix_rows).to_csv(out / "matrix.csv", index=False)
     dto.sort_values(["date", "article"]).to_csv(out / "dto.csv", index=False)

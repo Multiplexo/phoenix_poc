@@ -137,3 +137,28 @@ def test_praesentationen(data, tmp_path):
         assert "/*__SPEC__*/null" not in html and "font/woff2" in html
     ab = json.loads(paths[1].read_text(encoding="utf-8"))
     assert any(f.get("demo") for f in ab["folien"])  # Demo-Daten sind gekennzeichnet
+
+
+def test_generator_netting_und_cluster():
+    from pcpoc import generator
+    idx = pd.period_range("2025-11", periods=12, freq="M")
+    act = pd.DataFrame([[100.0] * 12, [10.0 * (i + 1) for i in range(12)]], index=["S", "R"], columns=idx)
+    arts = pd.DataFrame(dict(article=["S", "R"], description="", product_group=["PG-A", "PG-B"], cluster=["standard", "ramp_down"],
+                             lead_time_months=4))
+    dto = pd.DataFrame(dict(date=pd.to_datetime(["2026-05-01", "2026-05-02", "2026-05-03"]), article=["S", "S", "R"],
+                            country=["DE", "CN", "DE"], customer="", qty=[30.0, 10.0, 5.0]))
+    mx = pd.DataFrame(dict(article=["*", "*"], country=["DE", "CN"], site=["Deutschland", "Nanjing"]))
+    stock = pd.DataFrame(dict(article=["S"], site=["Deutschland"], art=["bestand"], qty=[160.0]))
+    p = io.load_params(PARAMS)
+    p["netting"]["sicherheitsbestand_monate"] = 0.0
+    ov = generator.Overrides(projekte=[dict(article="S", site="Nanjing", ab="2026-12", menge_pro_monat=50)], wachstum_gruppe={"PG-A": 0.0})
+    rows, info = generator.generate(act, arts, dto, mx, stock, p, pd.Period("2026-11", "M"), ov)
+    s_de = rows[(rows.article == "S") & (rows.site == "Deutschland")]
+    assert s_de["brutto"].iloc[0] == pytest.approx(75.0)          # 100 x 75 % Länderanteil DE
+    assert s_de["netto"].tolist()[:3] == pytest.approx([0.0, 0.0, 65.0])  # 160 Bestand: 75 + 75 + 10 verbraucht
+    s_cn = rows[(rows.article == "S") & (rows.site == "Nanjing")]
+    assert s_cn["projekt"].tolist()[:2] == [0.0, 50.0]
+    r = rows[rows.article == "R"]["stat"].tolist()
+    assert r[1] < r[0]                                                  # ramp_down klingt ab
+    assert info["R"]["methode"] == "abklingend"
+    assert generator.briefing_outliers(pd.Series([100.0] * 5 + [900.0] + [100.0] * 6, index=idx), pd.Period("2026-11", "M")) == [idx[5]]

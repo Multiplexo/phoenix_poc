@@ -8,3 +8,6 @@ data/*
 wissen_vorschlaege.yaml
 .DS_Store
 node_modules/
+plattform/db.sqlite3
+plattform/staticfiles/
+plattform/published/

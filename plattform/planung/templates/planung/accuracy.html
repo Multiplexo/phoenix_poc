@@ -1,0 +1,23 @@
+{% extends "planung/base.html" %}{% load planung_tags %}
+{% block title %}Forecast Accuracy{% endblock %}
+{% block content %}
+<h1>Forecast Accuracy</h1>
+<div class="sub">Freigegebener Forecast-Stand mit WBZ-Versatz (Standard {{ lag_default }} Monate, je Artikel aus dem Stamm) gegen das Ist. Wird nach jedem DTO-Import fortgeschrieben.</div>
+<div class="kpis">
+  <div class="kpi"><div class="l">WMAPE (12 Monate)</div><div class="v">{{ k.wmape|pct }}</div><div class="h">mengengewichtet: Σ|F−A| / ΣA</div></div>
+  <div class="kpi"><div class="l">MAPE</div><div class="v">{{ k.mape|pct }}</div><div class="h">Ø der Prozentfehler; von kleinen und sporadischen Mengen verzerrt</div></div>
+  <div class="kpi"><div class="l">Bias</div><div class="v">{{ k.bias|pct:"s" }}</div><div class="h">positiv = Überplanung</div></div>
+  <div class="kpi g"><div class="l">Wert manueller Anpassung</div><div class="v">{{ k.fva|pp }}</div><div class="h">WMAPE Statistik {{ k.wmape_stat|pct }}</div></div>
+</div>
+<div class="panel"><h2>Verlauf</h2><div data-chart="chart-data"></div>{{ chart|json_script:"chart-data" }}</div>
+<div class="grid2">
+<div class="panel"><h2>Je Cluster (12 Monate)</h2>
+  <table><tr><th>Cluster</th><th class="n">Werte</th><th class="n">MAPE</th><th class="n">WMAPE</th><th class="n">Bias</th><th class="n">FVA</th></tr>
+  {% for c in je_cluster %}<tr><td>{{ c.cluster }}</td><td class="n">{{ c.n }}</td><td class="n">{{ c.mape|pct }}</td><td class="n">{{ c.wmape|pct }}</td><td class="n">{{ c.bias|pct:"s" }}</td><td class="n">{{ c.fva|pp }}</td></tr>{% endfor %}</table>
+</div>
+<div class="panel"><h2>Je Monat</h2>
+  <div class="scroll" style="max-height:420px"><table><tr><th>Monat</th><th class="n">Werte</th><th class="n">MAPE</th><th class="n">WMAPE</th><th class="n">Bias</th></tr>
+  {% for v in verlauf %}<tr><td>{{ v.monat }}</td><td class="n">{{ v.n }}</td><td class="n">{{ v.mape|pct }}</td><td class="n">{{ v.wmape|pct }}</td><td class="n">{{ v.bias|pct:"s" }}</td></tr>{% endfor %}</table></div>
+</div>
+</div>
+{% endblock %}

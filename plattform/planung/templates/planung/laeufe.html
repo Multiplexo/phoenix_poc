@@ -1,0 +1,10 @@
+{% extends "planung/base.html" %}{% load planung_tags %}
+{% block title %}Forecast-Läufe{% endblock %}
+{% block content %}
+<h1>Forecast-Läufe</h1>
+<div class="sub">Jeder Lauf ist ein versionierter Forecast-Stand mit den verwendeten Parametern. Freigegebene Stände sind die Basis für die Forecast Accuracy.</div>
+<form method="post" class="toolbar">{% csrf_token %}<input name="notiz" placeholder="Notiz, z. B. Monatslauf" size="28"><button class="p">Neuen Lauf für alle Artikel berechnen</button></form>
+<div class="panel"><table><tr><th>Lauf</th><th>Erstellt</th><th>Anlass</th><th>Stichtag</th><th class="n">Artikel</th><th class="n">freigegeben</th><th class="n">Brutto</th><th class="n">Netto</th><th>Notiz</th></tr>
+{% for l in laeufe %}<tr><td>{{ l.id }}</td><td>{{ l.erstellt_am|date:"d.m.Y H:i" }} · {{ l.von }}</td><td>{{ l.get_anlass_display }}</td><td>{{ l.stichtag_monat|date:"m/Y" }}</td><td class="n">{{ l.n }}</td><td class="n">{{ l.freigegeben }}</td><td class="n">{{ l.brutto|stk }}</td><td class="n">{{ l.netto|stk }}</td><td class="muted">{{ l.notiz }}</td></tr>
+{% empty %}<tr><td colspan="9" class="muted">Noch keine Läufe.</td></tr>{% endfor %}</table></div>
+{% endblock %}

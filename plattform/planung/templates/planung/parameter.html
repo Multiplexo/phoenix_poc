@@ -1,0 +1,33 @@
+{% extends "planung/base.html" %}{% load planung_tags %}
+{% block title %}Parameter{% endblock %}
+{% block content %}
+<h1>Parameter</h1>
+<div class="sub">Wachstumsannahmen (Market Evaluation Board), Projektmengen, Rechenparameter und Feature-Flags.</div>
+<div class="grid2">
+<div class="panel"><h2>Marktwachstum</h2>
+  <table><tr><th>Ebene</th><th>Bezug</th><th class="n">p. a.</th><th>ab</th><th>Beschluss</th><th></th></tr>
+  {% for w in wachstum %}<tr><td>{{ w.get_ebene_display }}</td><td>{{ w.schluessel }}</td><td class="n">{{ w.wachstum_pa|pct:"s" }}</td><td>{{ w.gueltig_ab|date:"m/Y" }}</td><td>{{ w.beschlossen_von }}<br><span class="muted">{{ w.notiz }} · {{ w.erfasst_von }}</span></td>
+    <td><form method="post">{% csrf_token %}<input type="hidden" name="aktion" value="wachstum_aus"><input type="hidden" name="id" value="{{ w.id }}"><button>Deaktivieren</button></form></td></tr>{% empty %}<tr><td colspan="6" class="muted">Keine.</td></tr>{% endfor %}</table>
+  <form method="post" style="margin-top:10px">{% csrf_token %}<input type="hidden" name="aktion" value="wachstum_neu">
+    <div class="formrow"><label>Ebene<select name="ebene"><option value="global">Global</option><option value="produktgruppe">Produktgruppe</option><option value="artikel">Artikel</option></select></label>
+      <label>Bezug<input name="schluessel" list="gruppen" size="10" placeholder="PG-C"></label><datalist id="gruppen">{% for g in gruppen %}<option>{{ g }}</option>{% endfor %}</datalist>
+      <label>% p. a.<input name="wachstum" size="5" required></label><label>ab<input type="month" name="ab" required></label></div>
+    <div class="formrow"><label>Beschlossen von<input name="beschlossen_von" value="Market Evaluation Board" size="20"></label><label>Notiz<input name="notiz" size="22"></label><button class="p">Speichern</button></div></form>
+  {% if wachstum_alt %}<p class="note" style="margin-top:8px">Historie: {% for w in wachstum_alt %}{{ w.get_ebene_display }} {{ w.schluessel }} {{ w.wachstum_pa|pct:"s" }} ({{ w.erfasst_am|date:"d.m.y" }}){% if not forloop.last %} · {% endif %}{% endfor %}</p>{% endif %}
+</div>
+<div class="panel"><h2>Projektmengen (alle Artikel)</h2>
+  <table><tr><th>Artikel</th><th class="n">Stk./Monat</th><th>Zeitraum</th><th>Standort</th><th>Quelle</th></tr>
+  {% for p in projekte %}<tr><td><a href="{% url 'artikel' p.artikel %}">{{ p.artikel }}</a></td><td class="n">{{ p.menge_pro_monat|stk }}</td><td>{{ p.ab|date:"m/Y" }}{% if p.bis %}–{{ p.bis|date:"m/Y" }}{% endif %}</td><td>{{ p.standort|default:"anteilig" }}</td><td>{{ p.quelle }}<br><span class="muted">{{ p.notiz }}</span></td></tr>
+  {% empty %}<tr><td colspan="5" class="muted">Keine. Erfassen in der Artikelansicht.</td></tr>{% endfor %}</table>
+</div>
+</div>
+<div class="grid2">
+<div class="panel"><h2>Feature-Flags</h2>
+  <dl class="kv"><dt>Freigabe-Workflow</dt><dd>{% if features.freigabe %}an{% else %}aus (Forecasts gelten sofort als freigegeben){% endif %}</dd>
+    <dt>Zweite Freigabestufe</dt><dd>{% if features.zweite_stufe %}an (Vier-Augen-Prinzip){% else %}aus{% endif %}</dd>
+    <dt>Rollen</dt><dd>{% if features.rollen %}an · Stufe 1: {{ stufe1|join:", "|default:"–" }} · Stufe 2: {{ stufe2|join:", "|default:"–" }}{% else %}aus (alle Angemeldeten dürfen freigeben){% endif %}</dd></dl>
+  <p class="note">Gesetzt über Umgebungsvariablen FEATURE_FREIGABE, FEATURE_ZWEITE_STUFE, FEATURE_ROLLEN, FREIGABE_STUFE1/2 (Render → Environment).</p>
+</div>
+<div class="panel"><h2>Rechenparameter (config/params.yaml)</h2><pre>{{ params_text }}</pre></div>
+</div>
+{% endblock %}

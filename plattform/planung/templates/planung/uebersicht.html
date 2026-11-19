@@ -1,0 +1,35 @@
+{% extends "planung/base.html" %}{% load planung_tags %}
+{% block title %}Übersicht{% endblock %}
+{% block content %}
+<h1>Zu beplanende Artikel</h1>
+<div class="sub">{{ n_artikel }} Artikel · Status nach Forecast, Freigabe und Abweichungen. Forecast-Werte: Summe der nächsten 12 Monate in Stück.</div>
+<div class="kpis">
+  {% for s, n, kl in zaehler %}<a class="kpi" style="text-decoration:none;color:inherit" href="?status={{ s|urlencode }}"><div class="l">{{ s }}</div><div class="v">{{ n }}</div><div class="h"><span class="chip {{ kl }}">filtern</span></div></a>{% endfor %}
+  <div class="kpi g"><div class="l">WMAPE / Bias (12 Monate)</div><div class="v">{{ k.wmape|pct }}</div><div class="h">Bias {{ k.bias|pct:"s" }} · MAPE {{ k.mape|pct }}</div></div>
+</div>
+<div class="panel">
+  <form class="toolbar" method="get">
+    <input name="q" value="{{ f.q }}" placeholder="Artikel suchen" size="14">
+    <select name="status"><option value="">Alle Status</option>{% for s, n, kl in zaehler %}<option {% if f.status == s %}selected{% endif %}>{{ s }}</option>{% endfor %}</select>
+    <select name="cluster"><option value="">Alle Cluster</option>{% for c in clusters %}<option {% if f.cluster == c %}selected{% endif %}>{{ c }}</option>{% endfor %}</select>
+    <select name="standort"><option value="">Alle Standorte</option>{% for s in sites %}<option {% if f.standort == s %}selected{% endif %}>{{ s }}</option>{% endfor %}</select>
+    <button>Filtern</button>{% if f.q or f.status or f.cluster or f.standort %}<a class="btn" href="?">Zurücksetzen</a>{% endif %}
+  </form>
+  <div class="scroll"><table>
+    <tr><th>Artikel</th><th>Cluster</th><th>Status</th><th>Standorte</th><th class="n">Brutto</th><th class="n">Netto</th><th class="n">MAPE*</th><th class="n">Bias*</th><th>Stand</th></tr>
+    {% for r in rows %}
+    <tr class="click">
+      <td><a href="{% url 'artikel' r.a.nummer %}"><b>{{ r.a.nummer }}</b></a><br><span class="muted">{{ r.a.bezeichnung }}</span></td>
+      <td>{{ r.a.cluster }}{% if r.a.cluster_quelle == "planer" %} <span class="chip">Planer</span>{% endif %}</td>
+      <td><span class="chip {{ r.klasse }}">{{ r.status }}</span></td>
+      <td>{{ r.standorte|join:", " }}</td>
+      <td class="n">{{ r.af.brutto_summe|stk }}</td><td class="n">{{ r.af.netto_summe|stk }}</td>
+      <td class="n">{{ r.wmape|pct }}</td><td class="n">{{ r.bias|pct:"s" }}</td>
+      <td class="muted">{% if r.af %}{{ r.af.get_status_display }}<br>{{ r.af.lauf.erstellt_am|date:"d.m. H:i" }}{% endif %}</td>
+    </tr>
+    {% empty %}<tr><td colspan="9" class="muted">Keine Artikel. Daten unter „Import“ laden.</td></tr>{% endfor %}
+    {% if rows %}<tr class="sum"><td colspan="4">Summe Auswahl</td><td class="n">{{ brutto|stk }}</td><td class="n">{{ netto|stk }}</td><td colspan="3"></td></tr>{% endif %}
+  </table></div>
+  <p class="note">* gewichteter Fehler (WMAPE) und Bias der letzten 12 Monate, Forecast mit WBZ-Versatz gegen Ist.</p>
+</div>
+{% endblock %}

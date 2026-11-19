@@ -23,15 +23,20 @@ COPY --from=build /app/out/praesentationen /app/out/praesentationen
 RUN for d in challenge abschluss; do node build_pptx.js /app/out/praesentationen/deck_$d.json /app/out/praesentationen/praesentation_$d.pptx; done \
  && rm /app/out/praesentationen/deck_*.json
 
-# Stufe 3: mit nginx ausliefern (Render setzt PORT)
-FROM nginx:1.27-alpine
-ENV PORT=10000
-COPY deploy/default.conf.template /etc/nginx/templates/default.conf.template
-COPY deploy/40-basic-auth.sh /docker-entrypoint.d/40-basic-auth.sh
-COPY deploy/gesperrt.html /usr/share/nginx/locked/index.html
-COPY pcpoc/assets/favicon/ /usr/share/nginx/icons/
-COPY --from=build /app/out/voranalyse.html /usr/share/nginx/html/index.html
-COPY --from=build /app/out/voranalyse.xlsx /usr/share/nginx/html/voranalyse.xlsx
-COPY --from=pptx /app/out/praesentationen /usr/share/nginx/html/praesentationen
-RUN chmod +x /docker-entrypoint.d/40-basic-auth.sh
+# Stufe 3: Planungsplattform (Django + gunicorn); Bericht und Präsentationen unter /bericht/
+FROM python:3.12-slim
+ENV PYTHONUNBUFFERED=1 PORT=10000 PUBLISHED_DIR=/app/plattform/published
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir pandas numpy openpyxl pyyaml django==5.1.4 gunicorn==23.0.0 whitenoise==6.8.2 \
+    "psycopg[binary]==3.2.3" dj-database-url==2.3.0
+COPY pcpoc ./pcpoc
+COPY config ./config
+COPY plattform ./plattform
+COPY deploy/bericht_index.html /app/plattform/published/index.html
+COPY --from=build /app/out/voranalyse.html /app/out/voranalyse.xlsx /app/plattform/published/
+COPY --from=pptx /app/out/praesentationen /app/plattform/published/praesentationen
+COPY deploy/start.sh /app/start.sh
+RUN chmod +x /app/start.sh && cd plattform && DJANGO_SECRET_KEY=build python manage.py collectstatic --noinput -v0
 EXPOSE 10000
+CMD ["/app/start.sh"]

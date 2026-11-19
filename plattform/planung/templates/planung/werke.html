@@ -1,0 +1,15 @@
+{% extends "planung/base.html" %}{% load planung_tags %}
+{% block title %}Forecast an die Werke{% endblock %}
+{% block content %}
+<h1>Forecast an die Werke</h1>
+<div class="sub">Freigegebener Netto-Forecast je Produktionsstandort, aktueller freigegebener Stand je Artikel. {% if offen %}<b>{{ offen }} Artikel</b> haben einen offenen Vorschlag, der noch nicht freigegeben ist.{% endif %}</div>
+{% for s in sites %}
+<div class="panel"><h2>{{ s.name|default:"ohne Standort" }} · {{ s.artikel }} Artikel</h2>
+  <div class="toolbar"><a class="btn p" href="{% url 'werke_export' s.name 'xlsx' %}">Excel herunterladen</a><a class="btn" href="{% url 'werke_export' s.name 'csv' %}">CSV</a>
+    <span class="muted">Brutto {{ s.brutto|stk }} · Netto {{ s.netto|stk }} Stk.</span></div>
+  <div class="scroll"><table><tr><th></th>{% for m in s.monate %}<th class="n">{{ m.monat|ml }}</th>{% endfor %}</tr>
+    <tr><td>Brutto</td>{% for m in s.monate %}<td class="n">{{ m.brutto|stk }}</td>{% endfor %}</tr>
+    <tr><td><b>Netto</b></td>{% for m in s.monate %}<td class="n"><b>{{ m.netto|stk }}</b></td>{% endfor %}</tr></table></div>
+</div>
+{% empty %}<div class="panel muted">Noch kein freigegebener Forecast.</div>{% endfor %}
+{% endblock %}

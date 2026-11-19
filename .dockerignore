@@ -8,3 +8,6 @@ __pycache__
 *.pyc
 data/*
 !data/beispiel
+plattform/db.sqlite3
+plattform/staticfiles
+plattform/published

@@ -1,0 +1,13 @@
+{% extends "planung/base.html" %}
+{% block title %}Hinweise{% endblock %}
+{% block content %}
+<h1>Hinweise</h1>
+<div class="sub">Pings aus dem Loop: kurzfristige Abweichung (kumuliert über die letzten Tage), anhaltende Abweichung mit WBZ-Versatz, Ausreißer-Verdacht, Matrix-Pflege. Bei Abweichungen wird automatisch neu gerechnet; der neue Vorschlag wartet auf Prüfung.</div>
+<div class="toolbar">{% if nur_offen %}<a class="btn" href="?alle=1">Auch erledigte zeigen</a>{% else %}<a class="btn" href="?">Nur offene</a>{% endif %}</div>
+<div class="panel"><table><tr><th>Erkannt</th><th>Art</th><th>Artikel</th><th>Hinweis</th><th>Neuer Vorschlag</th><th></th></tr>
+{% for s in signale %}<tr><td>{{ s.erstellt_am|date:"d.m.Y H:i" }}</td><td><span class="chip {% if s.offen %}{% if s.art == 'ausreisser' or s.art == 'matrix' %}warn{% else %}bad{% endif %}{% endif %}">{{ s.get_art_display }}</span></td>
+  <td>{% if s.artikel %}<a href="{% url 'artikel' s.artikel %}">{{ s.artikel }}</a>{% else %}<a href="{% url 'matrix' %}">Matrix</a>{% endif %}</td><td>{{ s.text }}</td>
+  <td>{% if s.neuer_vorschlag %}{{ s.neuer_vorschlag.get_status_display }}{% endif %}</td>
+  <td>{% if s.offen and s.art != 'ausreisser' %}<form method="post">{% csrf_token %}<input type="hidden" name="id" value="{{ s.id }}"><button>Erledigt</button></form>{% elif not s.offen %}<span class="muted">{{ s.erledigt_von }}</span>{% endif %}</td></tr>
+{% empty %}<tr><td colspan="6" class="muted">Keine offenen Hinweise.</td></tr>{% endfor %}</table></div>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% load static %}<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" type="image/svg+xml" href="{% static 'planung/icon.svg' %}">
+<link rel="icon" type="image/png" sizes="32x32" href="{% static 'planung/favicon-32.png' %}">
+<link rel="apple-touch-icon" href="{% static 'planung/apple-touch-icon.png' %}">
+<meta name="theme-color" content="#101D35">
+<title>{% block title %}Bedarfsplanung{% endblock %} · PoC Bedarfsplanung</title>
+<link rel="stylesheet" href="{% static 'planung/app.css' %}">
+</head>
+<body>
+<div class="topbar"><div class="topbar-in">
+  <img class="band" src="{% static 'planung/signal-chain.svg' %}" alt="Phoenix Contact">
+  <div class="brand">Power Supplies · BU Paderborn<small>Bedarfsplanung · PoC AG0021</small></div>
+  <div class="wer">Angemeldet: <b>{{ planer }}</b>{% if stand %}<br>Datenstand {{ stand|date:"d.m.Y" }}{% endif %}</div>
+</div></div>
+{% with p=request.resolver_match.url_name %}
+<nav class="main"><div>
+  <a href="{% url 'uebersicht' %}" class="{% if p == 'uebersicht' or p == 'artikel' %}on{% endif %}">Übersicht</a>
+  <a href="{% url 'hinweise' %}" class="{% if p == 'hinweise' %}on{% endif %}">Hinweise{% if offene_hinweise %}<span class="cnt">{{ offene_hinweise }}</span>{% endif %}</a>
+  <a href="{% url 'accuracy' %}" class="{% if p == 'accuracy' %}on{% endif %}">Forecast Accuracy</a>
+  <a href="{% url 'werke' %}" class="{% if p == 'werke' %}on{% endif %}">Forecast an die Werke</a>
+  <a href="{% url 'import' %}" class="{% if p == 'import' %}on{% endif %}">Import</a>
+  <a href="{% url 'matrix' %}" class="{% if p == 'matrix' %}on{% endif %}">Matrix</a>
+  <a href="{% url 'parameter' %}" class="{% if p == 'parameter' %}on{% endif %}">Parameter</a>
+  <a href="{% url 'laeufe' %}" class="{% if p == 'laeufe' %}on{% endif %}">Läufe</a>
+  <a href="{% url 'protokoll' %}" class="{% if p == 'protokoll' %}on{% endif %}">Protokoll</a>
+  <a href="/bericht/">Voranalyse & Präsentationen</a>
+</div></nav>
+{% endwith %}
+<main>
+{% for m in messages %}<div class="msg {{ m.tags }}">{{ m }}</div>{% endfor %}
+{% block content %}{% endblock %}
+</main>
+<script src="{% static 'planung/chart.js' %}"></script>
+</body>
+</html>

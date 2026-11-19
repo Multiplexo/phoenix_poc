@@ -1,0 +1,28 @@
+{% extends "planung/base.html" %}
+{% block title %}Matrix{% endblock %}
+{% block content %}
+<h1>Matrix Artikel × Land → Standort</h1>
+<div class="sub">{% if v %}Version <b>{{ v.bezeichnung }}</b>, gültig ab {{ v.gueltig_ab|date:"d.m.Y" }}, angelegt von {{ v.erstellt_von }}.
+  {% if v.geprueft_am %}Zuletzt geprüft {{ v.geprueft_am|date:"d.m.Y" }} von {{ v.geprueft_von }}.{% else %}Noch nicht geprüft.{% endif %}{% else %}Keine Matrix importiert.{% endif %}</div>
+{% if v %}
+{% if ueberfaellig %}<div class="msg warning">Die quartalsweise Überprüfung ist fällig.</div>{% endif %}
+<div class="grid2">
+<div class="panel"><h2>Standardregel je Land (zwei Hubs)</h2>
+  {% for site, laender in hubs.items %}<p><b>{{ site }}</b>: {{ laender|join:", " }}</p>{% endfor %}
+  <form method="post">{% csrf_token %}<button class="p" name="aktion" value="geprueft">Als geprüft markieren (Quartalsreview)</button></form>
+</div>
+<div class="panel"><h2>Eintrag setzen oder entfernen</h2>
+  <form method="post">{% csrf_token %}
+    <div class="formrow"><label>Artikel (* = alle)<input name="artikel" value="*" size="10"></label><label>Land<input name="land" size="4" required></label><label>Standort<input name="standort" size="12"></label></div>
+    <button class="p" name="aktion" value="setzen">Setzen</button> <button name="aktion" value="entfernen">Entfernen</button>
+    <p class="note">Jede Änderung legt eine neue Version an; der nächste Forecast-Lauf nutzt sie.</p></form>
+</div>
+</div>
+<div class="panel"><h2>Artikelspezifische Ausnahmen</h2>
+  <table><tr><th>Artikel</th><th>Land</th><th>Standort</th></tr>{% for e in ausnahmen %}<tr><td>{{ e.artikel }}</td><td>{{ e.land }}</td><td>{{ e.standort }}</td></tr>{% empty %}<tr><td colspan="3" class="muted">Keine.</td></tr>{% endfor %}</table>
+</div>
+<div class="panel"><h2>Versionen</h2>
+  <table><tr><th>Version</th><th>Gültig ab</th><th>Angelegt</th><th>Geprüft</th><th>Notiz</th></tr>{% for x in versionen %}<tr><td>{{ x.bezeichnung }}</td><td>{{ x.gueltig_ab|date:"d.m.Y" }}</td><td>{{ x.erstellt_von }} {{ x.erstellt_am|date:"d.m.Y" }}</td><td>{{ x.geprueft_von }} {{ x.geprueft_am|date:"d.m.Y" }}</td><td class="muted">{{ x.notiz }}</td></tr>{% endfor %}</table>
+</div>
+{% endif %}
+{% endblock %}
