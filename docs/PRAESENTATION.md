@@ -20,6 +20,16 @@ Ziel: Erwartungen angleichen, Erfolgskriterien und Datenlieferung festmachen.
 | 10 | Zeitplan | 6 Wochen bis 31.12., 2 Planer-Termine, Daten bis 27.11. | `POC_PLAN.md` |
 | 11 | Offene Fragen | die 5 wichtigsten zur Entscheidung im Termin | `OFFENE_FRAGEN.md` |
 
+### KI-Kapitel (Challenge, Folien 5–7)
+
+| Folie | Kernaussage |
+|---|---|
+| Wo KI heute mitarbeitet | Erkennen und Empfehlen laufen im Prototyp; das Sprachmodell für Planerwissen ist ein vorbereiteter Pilot (nur nach Freigabe) |
+| Vom Assistenten zum Planungsagenten | Vier Stufen: Assistieren → Lernen → Kontext lesen → Vorbereiten; jede Stufe erst nach Messung der vorigen |
+| IBP rechnet. Die KI-Schicht erklärt und lernt. | IBP bleibt führend für Statistik und Prozess; die KI-Schicht ergänzt, was außerhalb von SAP liegt: Wissen, Kontext, Begründung, Lernen aus Eingriffen |
+
+Argumentationslinie: nicht gegen IBP, sondern als Schicht darüber, die IBP bessere Eingaben liefert. Die Notizen in der PowerPoint sind so formuliert, dass sie auch beim Versand an Phoenix passen.
+
 ## B. Abschluss (KW 53 / Anfang Januar)
 
 Ziel: Nachweis „ob und wo“ Mehrwert entsteht, Empfehlung für IBP und das weitere Vorgehen.

@@ -164,8 +164,10 @@ function body(f){
       ${f.text ? `<div class="lead">${esc(f.text)}</div>` : ""}</div>`;
     case "vergleich": return `<div class="content">${head(f)}
       <div class="grid cmp" style="grid-template-columns:1fr 1fr">
-        <div class="card hi"><div class="lab">${esc(f.links.label)}</div><ul>${f.links.punkte.map(p => `<li>${esc(p)}</li>`).join("")}</ul></div>
-        <div class="card neg"><div class="lab">${esc(f.rechts.label)}</div><ul>${f.rechts.punkte.map(p => `<li>${esc(p)}</li>`).join("")}</ul></div></div></div>`;
+        ${[["links", f.links], ["rechts", f.rechts]].map(([seite, col]) => {
+          const hi = (f.hervorheben || "links") === seite, neg = !hi && f.stil !== "neutral";
+          return `<div class="card ${hi ? "hi" : ""} ${neg ? "neg" : ""}"><div class="lab">${esc(col.label)}</div><ul>${col.punkte.map(p => `<li>${esc(p)}</li>`).join("")}</ul></div>`;
+        }).join("")}</div></div>`;
     case "schritte": return `<div class="content">${head(f)}
       <div class="steps">${f.schritte.map(s => `<div class="step ${s.aktiv?"on":""}"><div class="c">${esc(s.nr)}</div><div class="t">${esc(s.titel)}</div><div class="x">${esc(s.text)}</div></div>`).join("")}</div></div>`;
     case "tabelle": return `<div class="content">${head(f)}

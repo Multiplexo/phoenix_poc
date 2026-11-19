@@ -44,7 +44,7 @@ def _pp(x) -> str:
 
 
 def build_challenge() -> dict:
-    kap = ["Ausgangslage", "Zielbild", "Methode", "Vorgehen"]
+    kap = ["Ausgangslage", "Zielbild", "KI-Ansatz", "Methode", "Vorgehen"]
     s = [
         dict(typ="titel", eyebrow="Kick-off · PoC AG0021", titel=["Bedarfsplanung", "messbar machen."],
              akzent="gold", unterzeile=f"{KUNDE} · Q4 2026",
@@ -58,10 +58,11 @@ def build_challenge() -> dict:
              text="Fehler wirken doppelt: Lieferunfähigkeit oder Millionen im Überbestand. Das Wissen steckt in wenigen Köpfen.",
              notiz="Zahlen aus dem Vorgespräch; im Termin bestätigen lassen (Beschaffungsvolumen 25–30 oder 250–300 Mio €?)."),
         dict(typ="vergleich", kapitel=1, eyebrow="Zielbild", titel=["Was der PoC ist.", "Und was nicht."], akzent="gold",
-             links=dict(label="Der PoC ist", punkte=["Entscheidungshilfe vor SAP IBP", "Messung von Prognosegüte und Wirkung manueller Anpassungen",
+             links=dict(label="Der PoC ist", punkte=["Planungsplattform als Brücke bis SAP IBP: Forecast je Standort, Netting, Freigabe",
+                                                      "Messung von Prognosegüte und Wirkung manueller Anpassungen",
                                                       "Empfehlungen mit Datenbasis und Konfidenz", "Gesichertes Planungswissen"]),
-             rechts=dict(label="Der PoC ist nicht", punkte=["Ersatz für SAP IBP oder die Planer", "Excel-Nachbau mit Netting gegen Bestand",
-                                                             "Plattform mit Freigabe-Workflow", "Szenario-Simulation oder Euro-Bewertung"]),
+             rechts=dict(label="Der PoC ist nicht", punkte=["Ersatz für SAP IBP oder die Planer", "Eine Black Box, die selbst entscheidet",
+                                                             "Live-Anbindung an SAP (vorbereitet, nicht angebunden)", "Szenario-Simulation oder Euro-Bewertung"]),
              notiz="SAP IBP bleibt führend, die finale Prognose bleibt bei Phoenix (Angebot AG0021, Abschnitt 1)."),
         dict(typ="karten", kapitel=1, eyebrow="Zielbild", titel=["Drei Fragen,", "die der PoC beantwortet."], akzent="cyan",
              nummeriert=True, hervorheben=1,
@@ -69,24 +70,45 @@ def build_challenge() -> dict:
                      dict(label="Regeln", titel="Welchen Erkennungsregeln kann man trauen?", text="Trefferquote je Regeltyp im Rückvergleich, nur mit damals bekanntem Wissen."),
                      dict(label="Wissen", titel="Welches Wissen muss gesichert werden?", text="Projekte, Abkündigungen, Distributor-Muster: strukturiert, mit Quelle und Datum.")],
              notiz="Diese drei Fragen sind zugleich die Gliederung des Abschlussberichts und die Brücke zu SAP IBP."),
-        dict(typ="karten", kapitel=2, eyebrow="Methode", titel=["„KI“ heißt hier:", "erklärbar und überprüfbar."], akzent="gold",
-             hervorheben=2,
-             karten=[dict(label="Erkennen", titel="Auffälligkeiten finden", text="Peaks, Trendbrüche, systematischer Bias, Bedarfsmuster."),
-                     dict(label="Empfehlen", titel="Mit Datenbasis und Konfidenz", text="Jede Empfehlung nennt Monate, Werte und Regel. Der Planer entscheidet."),
-                     dict(label="Belegen", titel="Im Rückvergleich messen", text="Zu jedem früheren Stichtag gerechnet und gegen das spätere Ist gehalten.")],
-             text="Ein Sprachmodell hilft optional beim Strukturieren von Gesprächsnotizen, nur nach Freigabe durch Phoenix.",
-             notiz="Erwartung an „KI“ im Termin explizit klären. Kein Black-Box-Modell, das den Forecast selbst erzeugt."),
-        dict(typ="bild", kapitel=2, eyebrow="So sieht das Ergebnis aus", titel=["Ein Bericht,", "den Planer lesen können."], akzent="cyan",
-             bild="bericht.png", text="Artikelliste mit Status, Verlauf mit WBZ-Versatz, Empfehlung zum Übernehmen oder Ablehnen. Läuft im Browser, Export nach Excel.",
+        dict(typ="karten", kapitel=2, eyebrow="KI im Prototyp", titel=["Wo KI heute", "mitarbeitet."], akzent="gold",
+             nummeriert=True, hervorheben=1,
+             karten=[dict(label="Erkennen", titel="Muster statt Bauchgefühl",
+                          text="Statistische Verfahren finden Peaks, Trendbrüche und Abweichungen im Auftragseingang, laufend statt quartalsweise."),
+                     dict(label="Empfehlen", titel="Vorschlag mit Begründung",
+                          text="Mit Datenbasis und Konfidenz. Wie gut sie trifft, misst der Rückvergleich gegen das spätere Ist."),
+                     dict(label="Verstehen", titel="Sprache wird zu Regeln",
+                          text="Ein Sprachmodell macht aus Gesprächsnotizen Regeln, etwa Projektmengen oder Abkündigungen.")],
+             text="Erkennen und Empfehlen laufen im Prototyp. Das Sprachmodell ist als Pilot vorbereitet und geht erst nach Freigabe durch Phoenix in Betrieb.",
+             notiz="Bewusst kein Black-Box-Modell, das den Forecast selbst rechnet: Vertrauen der Planer entsteht über Nachvollziehbarkeit. "
+                   "Jede Regel wird gemessen, bevor sie Gewicht bekommt."),
+        dict(typ="schritte", kapitel=2, eyebrow="KI in der Produktivlösung", titel=["Vom Assistenten", "zum Planungsagenten."], akzent="cyan",
+             schritte=[dict(nr="1", titel="Assistieren", text="Erkennen und empfehlen. Der Planer entscheidet.", aktiv=True),
+                       dict(nr="2", titel="Lernen", text="Aus Freigaben, Ablehnungen und Rückvergleich lernen, welche Eingriffe wirken."),
+                       dict(nr="3", titel="Kontext lesen", text="Signale aus Vertrieb, CRM und Gremien als Bedarfstreiber nutzen, nicht nur Zahlen aus SAP."),
+                       dict(nr="4", titel="Vorbereiten", text="Ein Agent bereitet den Monatslauf vor, erklärt Abweichungen in Klartext, legt nur Ausnahmen vor.")],
+             notiz="Jede Stufe erst, wenn die vorige gemessen ist. Der Mensch entscheidet, alles wird protokolliert: Assistenzsystem, kein autonomes Entscheiden."),
+        dict(typ="vergleich", kapitel=2, eyebrow="Zusammenspiel mit SAP IBP", titel=["IBP rechnet.", "Die KI-Schicht erklärt und lernt."], akzent="gold",
+             stil="neutral", hervorheben="rechts",
+             links=dict(label="SAP IBP: führendes System", punkte=["Statistische Prognose und Planungsprozess", "Integration in Stammdaten, Bestand und Supply",
+                                                                    "Einheitlicher Standard im Konzern"]),
+             rechts=dict(label="KI-Schicht: Ergänzung für die BU", punkte=["Erfahrungswissen der Planer, strukturiert und auffindbar",
+                                                                          "Signale außerhalb von SAP: Vertrieb, Projekte, Gremien",
+                                                                          "Empfehlungen mit Begründung in Klartext",
+                                                                          "Messbar, welche Eingriffe wirken"]),
+             notiz="IBP arbeitet mit den Daten, die in SAP stehen. Die teuren Fehler entstehen oft durch Wissen außerhalb davon: Peaks, Projekte, Abkündigungen. "
+                   "Dort setzt die KI-Schicht an und liefert IBP bessere Eingaben."),
+        dict(typ="bild", kapitel=3, eyebrow="So sieht das Ergebnis aus", titel=["Eine Plattform,", "die den Loop schließt."], akzent="cyan",
+             bild="plattform.png", text="Status je Artikel, Brutto → Netto je Standort, Forecast gegen Ist, Empfehlungen mit Begründung, Freigabe. "
+                                         "Ein Hinweis kommt, sobald der Markt abweicht; der neue Vorschlag ist dann schon gerechnet.",
              link="phoenix-poc-voranalyse.onrender.com",
-             notiz="Hier live in den Bericht wechseln (Demo-Daten): A-1029 zeigt eine fehlende Projektmenge, Reiter Rückvergleich zeigt Trefferquoten."),
-        dict(typ="schritte", kapitel=2, eyebrow="Messlogik", titel=["Verglichen wird,", "was damals bestellt wurde."], akzent="gold",
+             notiz="Live in die Plattform wechseln (Demo-Daten): Hinweise öffnen, einen Artikel mit Ping zeigen, Ausreißer bereinigen, freigeben."),
+        dict(typ="schritte", kapitel=3, eyebrow="Messlogik", titel=["Verglichen wird,", "was damals bestellt wurde."], akzent="gold",
              schritte=[dict(nr="Juli", titel="Forecast-Stand", text="Planer geben den Forecast für November frei."),
                        dict(nr="+4 M.", titel="WBZ-Versatz", text="Auf dieser Basis wird Material bestellt.", aktiv=True),
                        dict(nr="Nov.", titel="Ist", text="Der Markt fordert ab, was er braucht."),
                        dict(nr="Δ", titel="Güte", text="WMAPE und Bias; FVA = Statistik gegen freigegeben.")],
              notiz="WMAPE = Σ|F−A| / ΣA; Bias = Σ(F−A) / ΣA. Der Versatz je Artikel kommt aus der Wiederbeschaffungszeit."),
-        dict(typ="tabelle", kapitel=3, eyebrow="Erfolgskriterien zur Abstimmung", titel=["Woran wir den PoC", "am Ende messen."], akzent="cyan",
+        dict(typ="tabelle", kapitel=4, eyebrow="Erfolgskriterien zur Abstimmung", titel=["Woran wir den PoC", "am Ende messen."], akzent="cyan",
              kopf=["Kriterium", "Messung", "Vorschlag"],
              zeilen=[["Prognosegüte transparent", "WMAPE und Bias je Cluster, von Planern bestätigt", "vollständig"],
                      ["Wirkung manueller Anpassungen", "FVA je Cluster", "liegt vor"],
@@ -94,12 +116,12 @@ def build_challenge() -> dict:
                      ["Akzeptanz", "Empfehlungen „nachvollziehbar“ laut Planern", "≥ 70 %"],
                      ["Wissen gesichert", "Regeln mit Quelle, bestätigt", "≥ N Regeln"]],
              notiz="Schwellen gemeinsam festlegen. Ohne vorher vereinbarte Kriterien bleibt der Nachweis Ansichtssache."),
-        dict(typ="karten", kapitel=3, eyebrow="Datenanfrage", titel=["Was wir brauchen.", "Und was nicht."], akzent="gold", hervorheben=0,
+        dict(typ="karten", kapitel=4, eyebrow="Datenanfrage", titel=["Was wir brauchen.", "Und was nicht."], akzent="gold", hervorheben=0,
              karten=[dict(label="Muss", titel="Bis 27.11.", text="DTO 24–36 Monate · archivierte Forecast-Stände (System und Planer) · Artikel mit Cluster und WBZ"),
                      dict(label="Soll", titel="Für das Reverse-Engineering", text="Aktuelle Planungs-Excel · Matrix Artikel × Land → Standort · interne Accuracy-Auswertung"),
                      dict(label="Nicht nötig", titel="Spart Aufwand", text="Bestände, Transit, Intercompany, REST-Zugang")],
              notiz="Kritisch: Gibt es archivierte Forecast-Stände getrennt nach Systemvorschlag und Planer-Wert? Sonst ist FVA nur ab jetzt messbar."),
-        dict(typ="schritte", kapitel=3, eyebrow="Zeitplan", titel=["Sechs Wochen", "bis zum Ergebnis."], akzent="cyan",
+        dict(typ="schritte", kapitel=4, eyebrow="Zeitplan", titel=["Sechs Wochen", "bis zum Ergebnis."], akzent="cyan",
              schritte=[dict(nr="KW 47", titel="Kick-off", text="Ziele, Kriterien, Datenanfrage"),
                        dict(nr="KW 48", titel="Daten", text="Übernahme und Qualitätsprüfung", aktiv=True),
                        dict(nr="KW 49", titel="Planer-Termin 1", text="Excel-Logik, Wissen erfassen"),
@@ -107,7 +129,7 @@ def build_challenge() -> dict:
                        dict(nr="KW 51", titel="Planer-Termin 2", text="Empfehlungen plausibilisieren"),
                        dict(nr="KW 52/53", titel="Abschluss", text="Bericht und Empfehlung für IBP")],
              notiz="Datenlieferung ist der kritische Pfad. Verzögerung schiebt Termin 2 in die Weihnachtswoche."),
-        dict(typ="karten", kapitel=3, eyebrow="Heute zu entscheiden", titel=["Fünf Fragen", "für den Start."], akzent="gold",
+        dict(typ="karten", kapitel=4, eyebrow="Heute zu entscheiden", titel=["Fünf Fragen", "für den Start."], akzent="gold",
              karten=[dict(label="01", titel="Pilotumfang", text="Welche 3–5 Produktgruppen?"),
                      dict(label="02", titel="Forecast-Historie", text="Archiviert, getrennt nach System und Planer?"),
                      dict(label="03", titel="Erwartung an „KI“", text="Erklärbare Erkennung oder lernendes Modell?"),
@@ -122,7 +144,7 @@ def build_challenge() -> dict:
 
 
 def build_abschluss(rr: RunResult, synthetic: bool) -> dict:
-    kap = ["Ergebnis", "Prognosegüte", "Empfehlungen", "Ausblick"]
+    kap = ["Ergebnis", "Prognosegüte", "Empfehlungen", "KI & Ausblick"]
     t = rr.acc_total.iloc[0]
     b = rr.bt_total.iloc[0] if len(rr.bt_total) else None
     ds = rr.ds
@@ -142,6 +164,9 @@ def build_abschluss(rr: RunResult, synthetic: bool) -> dict:
     cl = rr.acc_cluster.sort_values("cluster")
     rules = pd.Series([r.get("typ", "?") for r in ds.knowledge]).value_counts() if ds.knowledge else pd.Series(dtype=int)
 
+    n_recs = sum(len(r.recs) for r in rr.results)
+    treffer = float((hits["trefferquote"] * hits["faelle"]).sum() / hits["faelle"].sum()) if len(hits) and hits["faelle"].sum() else None
+    n_stark = int((hits["trefferquote"] >= 0.65).sum()) if len(hits) else 0
     krit3 = None
     if b is not None and len(hits):
         krit3 = (hits["trefferquote"] >= 0.65).mean() >= 0.5 and b.wmape_empf < b.wmape_final
@@ -199,11 +224,28 @@ def build_abschluss(rr: RunResult, synthetic: bool) -> dict:
                      ["Wissen gesichert", f"{len(ds.knowledge)} Regeln", "erfüllt" if len(ds.knowledge) else "offen"]]),
         dict(typ="vergleich", kapitel=3, eyebrow="Grenzen", titel=["Was der PoC", "nicht zeigt."], akzent="gold",
              links=dict(label="Belegt", punkte=["Güte und Bias mit WBZ-Versatz", "Wert manueller Eingriffe", "Trefferquote je Regel", "Strukturiertes Wissen"]),
-             rechts=dict(label="Nicht belegt", punkte=["Wirkung auf Bestand und Lieferfähigkeit (kein Netting)", "Euro-Effekte", "Verhalten außerhalb der Pilotgruppen", "Dauerbetrieb und Akzeptanz über Monate"])),
-        dict(typ="karten", kapitel=3, eyebrow="Empfehlung für SAP IBP", titel=["Was in IBP", "landen sollte."], akzent="cyan", nummeriert=True, hervorheben=1,
-             karten=[dict(label="Steuerung", titel="Eingriffe gezielt", text="Manuelle Anpassung nur in Clustern mit positivem FVA; sonst Statistik."),
-                     dict(label="Regeln", titel="Regeln konfigurieren", text="Erkennungsregeln mit hoher Trefferquote als IBP-Ausreißer- und Alert-Regeln."),
-                     dict(label="Stammdaten", titel="Wissen als Stammdaten", text="Projekte, Abkündigungen, Distributor-Muster als gepflegte Merkmale.")]),
+             rechts=dict(label="Nicht belegt", punkte=["Euro-Effekte (gerechnet wird in Stück)", "Wirkung auf Lieferfähigkeit über Monate",
+                                                       "Verhalten außerhalb der Pilotgruppen", "Lernende Stufen der KI (brauchen Feedback-Historie)"])),
+        dict(typ="kennzahlen", kapitel=3, eyebrow="KI im PoC", titel=["Was die KI", "beigetragen hat."], akzent="cyan", demo=demo,
+             werte=[dict(wert=_num(n_recs), label="Empfehlungen", hinweis=f"zum Stand {rr.cutoff}, je mit Datenbasis"),
+                    dict(wert=_pct(treffer) if treffer is not None else "–", label="Trefferquote", hinweis="im Rückvergleich, alle Regeln", hervorheben=True),
+                    dict(wert=f"{n_stark} / {len(hits)}", label="Regeln über Schwelle", hinweis="Trefferquote ≥ 65 %"),
+                    dict(wert=_num(len(ds.knowledge)), label="Wissensregeln", hinweis="aus Erfahrungswissen strukturiert")],
+             text="Gemessen, nicht behauptet: Jede Regel wurde zu früheren Stichtagen nur mit damals bekanntem Wissen gerechnet und gegen das spätere Ist gehalten."),
+        dict(typ="schritte", kapitel=3, eyebrow="KI in der Produktivlösung", titel=["Vom Assistenten", "zum Planungsagenten."], akzent="gold",
+             schritte=[dict(nr="1", titel="Assistieren", text="Erkennen und empfehlen. Im PoC belegt.", aktiv=True),
+                       dict(nr="2", titel="Lernen", text="Planer-Feedback und Rückvergleich gewichten die Regeln automatisch."),
+                       dict(nr="3", titel="Kontext lesen", text="Sprachmodell macht Vertriebs- und Projektinformationen zu Bedarfstreibern."),
+                       dict(nr="4", titel="Vorbereiten", text="Agent bereitet den Monatslauf vor, Planer prüfen nur Ausnahmen.")]),
+        dict(typ="vergleich", kapitel=3, eyebrow="Zusammenspiel mit SAP IBP", titel=["IBP rechnet.", "Die KI-Schicht erklärt und lernt."], akzent="cyan",
+             stil="neutral", hervorheben="rechts",
+             links=dict(label="In SAP IBP übernehmen", punkte=["Erkennungsregeln mit hoher Trefferquote als Ausreißer- und Alert-Regeln",
+                                                                "Manuelle Eingriffe nur in Clustern mit positivem FVA",
+                                                                "Projekte, Abkündigungen, Distributor-Muster als Merkmale"]),
+             rechts=dict(label="Als KI-Schicht daneben betreiben", punkte=["Wissen und Signale außerhalb von SAP erfassen",
+                                                                           "Empfehlungen mit Begründung vor jeder Freigabe",
+                                                                           "Lernen aus jeder Entscheidung der Planer",
+                                                                           "Schnell an neue Cluster und Märkte anpassen"])),
         dict(typ="schritte", kapitel=3, eyebrow="Nächste Schritte", titel=["Vom PoC", "in den Betrieb."], akzent="gold",
              schritte=[dict(nr="01", titel="Entscheidung", text="Ergebnisse mit Ender Ilgaz bewerten"),
                        dict(nr="02", titel="Regeln schärfen", text="Schwache Regeln verwerfen, starke kalibrieren", aktiv=True),

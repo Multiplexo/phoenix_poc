@@ -136,14 +136,17 @@ const render = {
     lead(s, f.text, Y_BODY + h + 0.35, 0.6);
   },
   vergleich(s, f) {
-    const gap = 0.3, w = (CW - gap) / 2, h = 3.1;
-    [[f.links, true], [f.rechts, false]].forEach(([col, pos], i) => {
+    const gap = 0.3, w = (CW - gap) / 2, h = 3.3;
+    const lang = Math.max(f.links.punkte.length, f.rechts.punkte.length) > 3;
+    const hiSeite = f.hervorheben || "links";
+    [[f.links, hiSeite === "links"], [f.rechts, hiSeite === "rechts"]].forEach(([col, hi], i) => {
       const x = X0 + i * (w + gap);
-      card(s, x, Y_BODY, w, h, pos, pos ? "Spalte ja" : "Spalte nein");
+      const pos = hi || f.stil === "neutral";  // neutral: beide Spalten gleichwertig, nur eine hervorgehoben
+      card(s, x, Y_BODY, w, h, hi, col.label || `Spalte ${i + 1}`);
       s.addText((col.label || "").toUpperCase(), { x: x + 0.35, y: Y_BODY + 0.3, w: w - 0.7, h: 0.3, fontSize: 10, bold: true, charSpacing: 2.5,
-        color: pos ? C.accent1 : C.background2, margin: 0, isTextBox: true, objectName: "Spaltenlabel" });
+        color: hi ? C.accent1 : C.background2, margin: 0, isTextBox: true, objectName: "Spaltenlabel" });
       s.addText(col.punkte.map((p, j) => ({ text: p, options: { bullet: { indent: 18 }, breakLine: j < col.punkte.length - 1, paraSpaceAfter: 10 } })),
-        { x: x + 0.35, y: Y_BODY + 0.75, w: w - 0.7, h: h - 1.0, fontSize: 16, color: pos ? C.background1 : C.background2, margin: 0, valign: "top",
+        { x: x + 0.35, y: Y_BODY + 0.72, w: w - 0.7, h: h - 0.9, fontSize: lang ? 14.5 : 16, color: pos ? C.background1 : C.background2, margin: 0, valign: "top",
           isTextBox: true, objectName: "Punkte" });
     });
   },
