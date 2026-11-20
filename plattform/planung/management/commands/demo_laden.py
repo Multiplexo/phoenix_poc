@@ -29,7 +29,15 @@ class Command(BaseCommand):
 
     def handle(self, *args, nur_wenn_leer=False, tag=18, **kw):
         if nur_wenn_leer and Artikel.objects.exists():
-            self.stdout.write("Daten vorhanden, Demo nicht geladen.")
+            from planung.models import Dokument
+            if Dokument.objects.exists() or not Artikel.objects.filter(nummer="A-1001").exists():
+                self.stdout.write("Daten vorhanden, Demo nicht geladen.")
+                return
+            # bestehende Demo-Datenbank: nur die Beispieldokumente nachladen
+            with tempfile.TemporaryDirectory() as tmp:
+                synth.generate(Path(tmp), seed=21, laufender_monat_bis_tag=tag)
+                n = self._dokumente(Path(tmp), "demo")
+            self.stdout.write(self.style.SUCCESS(f"Beispieldokumente nachgeladen: {n}"))
             return
         von = "demo"
         with tempfile.TemporaryDirectory() as tmp:
