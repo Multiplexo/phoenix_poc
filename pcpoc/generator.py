@@ -30,6 +30,7 @@ class Overrides:
     projekte: list[dict] = field(default_factory=list)                      # article, site|None, ab, bis|None, menge_pro_monat
     ausreisser_bereinigen: dict[str, list] = field(default_factory=dict)    # Artikel -> [Period]
     korrektur: dict[str, tuple] = field(default_factory=dict)               # Artikel -> (Faktor, Monate, Begründung) nach Ping
+    abkuendigung: dict[str, pd.Period] = field(default_factory=dict)        # Artikel -> erster Monat ohne Bedarf
 
 
 def cluster_level(series: pd.Series, cutoff: pd.Period, methode: dict, params: dict, horizon: int) -> tuple[np.ndarray, str]:
@@ -116,6 +117,11 @@ def generate(actuals: pd.DataFrame, articles: pd.DataFrame, dto: pd.DataFrame, m
             erkl += f"; nächste {int(n_m)} Monate x{fac:.2f} ({why})"
         g, g_src = growth_for(a, str(arts.loc[a, "product_group"]), params, ov)
         gfac = (1 + g) ** (np.arange(1, horizon + 1) / 12)
+        eol = ov.abkuendigung.get(a)
+        aktiv = np.array([eol is None or m < eol for m in months], dtype=float)  # ab Abkündigung kein Bedarf
+        if eol is not None:
+            stat = stat * aktiv
+            erkl += f"; Abkündigung ab {eol}"
         shares, unmapped = site_shares(dto, matrix, a, cutoff)
         if not shares:
             shares = {"nicht zugeordnet": 1.0}
@@ -126,6 +132,7 @@ def generate(actuals: pd.DataFrame, articles: pd.DataFrame, dto: pd.DataFrame, m
             ab = pd.Period(str(p["ab"]), "M")
             bis = pd.Period(str(p["bis"]), "M") if p.get("bis") else None
             mask = np.array([(m >= ab) and (bis is None or m <= bis) for m in months], dtype=float)
+            mask = mask * aktiv
             if p.get("site") and p["site"] in proj:
                 proj[p["site"]] += mask * float(p["menge_pro_monat"])
             else:

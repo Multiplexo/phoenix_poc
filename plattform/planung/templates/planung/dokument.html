@@ -1,0 +1,18 @@
+{% extends "planung/base.html" %}{% load planung_tags %}
+{% block title %}{{ doc.titel }}{% endblock %}
+{% block content %}
+{% include "planung/_doknav.html" %}
+<h1>{{ doc.titel }}</h1>
+<div class="sub">{{ doc.get_quelle_display }} · bekannt seit {{ doc.datum|date:"d.m.Y" }} · hochgeladen von {{ doc.hochgeladen_von }} · Auswertung: {{ doc.verfahren|default:"–" }}{% if doc.meldung %} · {{ doc.meldung }}{% endif %}</div>
+<div class="grid3">
+<div class="panel"><h2>Text (pseudonymisiert)</h2><div style="line-height:1.6">{{ text }}</div>
+  <p class="note" style="margin-top:10px">Markiert: Stellen, die als Zitat für ein Ereignis dienen.</p></div>
+<div class="panel"><h2>Ereignisse</h2>
+  {% for e in ereignisse %}<div class="rec"><div class="t">{{ e.get_typ_display }} {% if e.artikel %}<a href="{% url 'akte' e.artikel %}">{{ e.artikel }}</a>{% else %}<span class="chip warn">ohne Artikel</span>{% endif %}
+    <span class="chip {% if e.status == 'abgelehnt' %}bad{% elif e.status == 'vorschlag' %}info{% else %}ok{% endif %}">{{ e.get_status_display }}</span></div>
+    <div class="b">{% if e.menge_pro_monat %}{{ e.menge_pro_monat|stk }} Stk./Monat · {% endif %}{% if e.ab %}ab {{ e.ab|date:"m/Y" }} · {% endif %}Richtung {% if e.richtung > 0 %}mehr{% elif e.richtung < 0 %}weniger{% else %}offen{% endif %} · Konfidenz {{ e.konfidenz|pct }}{% if not e.zitat_geprueft %} · <b>Zitat nicht im Text gefunden</b>{% endif %}</div>
+    {% if e.uebernommen %}<div class="b">→ {{ e.uebernommen }}</div>{% endif %}</div>
+  {% empty %}<p class="muted">Keine Ereignisse gefunden.</p>{% endfor %}
+</div>
+</div>
+{% endblock %}

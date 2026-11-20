@@ -118,6 +118,9 @@ def overrides(cutoff: pd.Period) -> generator.Overrides:
                                 bis=str(periode(p.bis)) if p.bis else None, menge_pro_monat=p.menge_pro_monat))
     for e in AusreisserEntscheidung.objects.filter(entscheidung="bereinigen"):
         ov.ausreisser_bereinigen.setdefault(e.artikel, []).append(periode(e.monat))
+    from .models import Abkuendigung
+    for a in Abkuendigung.objects.filter(aktiv=True).order_by("ab"):
+        ov.abkuendigung.setdefault(a.artikel, periode(a.ab))
     return ov
 
 
@@ -523,6 +526,13 @@ def empfehlungen(artikel: str) -> list:
     knowledge = [dict(id=f"P-{p.id}", typ="projekt", artikel=p.artikel, ab=str(periode(p.ab)), menge_pro_monat=p.menge_pro_monat,
                       quelle=p.quelle, erfasst_am=str(periode(p.erfasst_am.date())), erfasst_von=p.erfasst_von, notiz=p.notiz)
                  for p in Projektmenge.objects.filter(artikel=artikel, aktiv=True)]
+    from .models import Abkuendigung, Ereignis
+    knowledge += [dict(id=f"E-{a.id}", typ="eol", artikel=a.artikel, ab=str(periode(a.ab)), quelle=a.quelle,
+                       erfasst_am=str(periode(a.erfasst_am.date())), erfasst_von=a.erfasst_von, notiz="Abkündigung")
+                  for a in Abkuendigung.objects.filter(artikel=artikel, aktiv=True)]
+    knowledge += [dict(id=f"D-{e.id}", typ="lagerauffuellung", kunde=e.kunde, quelle=e.dokument.titel,
+                       erfasst_am=str(periode(e.bekannt_seit)), erfasst_von=e.geprueft_von, notiz=e.zitat[:200])
+                  for e in Ereignis.objects.filter(typ="lagerauffuellung", status__in=("bestaetigt", "korrigiert")).select_related("dokument")]
     ds = pio.Dataset(dto=dto[dto["date"].dt.to_period("M") < sm], articles=arts, matrix=matrix_df(), forecasts=fc,
                      knowledge=knowledge, params=params())
     ds._actuals = act

@@ -17,7 +17,7 @@ from django.db import transaction
 from pcpoc import io as pio
 from pcpoc import synth
 from planung import adapters, services
-from planung.models import Artikel, ArtikelForecast, Marktwachstum, Projektmenge
+from planung.models import Artikel, ArtikelForecast, Ereignis, Marktwachstum, Projektmenge
 
 
 class Command(BaseCommand):
@@ -70,6 +70,36 @@ class Command(BaseCommand):
                         services.freigabe(af, "freigeben", "freigabe")
                 services.importiere("dto", dto[dto["date"] > pd.Timestamp(stand1)], von, f"DTO_bis_{tag:02d}.xlsx", stand_datum=last.date())
                 erg = services.loop(von)
+                n_doc = self._dokumente(folder, von)
         self.stdout.write(self.style.SUCCESS(
             f"Demo geladen: {Artikel.objects.count()} Artikel, {ArtikelForecast.objects.count()} Artikel-Forecasts, "
-            f"Loop: {erg['accuracy']} Accuracy-Werte, {erg['signale']} Signale, {erg['neu_berechnet']} neu berechnet"))
+            f"Loop: {erg['accuracy']} Accuracy-Werte, {erg['signale']} Signale, {erg['neu_berechnet']} neu berechnet, "
+            f"{n_doc} Beispieldokumente"))
+
+    def _dokumente(self, folder, von):
+        """Beispieldokumente laden, mit Regel-Fallback auswerten und eine Prüfung durch den Planer nachspielen."""
+        import yaml
+        from planung import demo_dokumente, dokumente
+        from planung.models import Dokument, Zuordnung
+        truth = yaml.safe_load((folder / "_truth.yaml").read_text(encoding="utf-8"))
+        hyp = [a for a, m in truth.items() if m.get("cluster") == "hyperscaler"]
+        if len(hyp) > 2:
+            Zuordnung.objects.create(begriff="Rechenzentrumskunde Nord", art="kunde", artikel=hyp[2], erfasst_von=von,
+                                     notiz="Beispiel: Kunde → Artikel")
+        docs = demo_dokumente.dokumente(truth, pd.Period("2023-11", "M"))
+        for d in docs:
+            doc = Dokument.objects.create(hochgeladen_von=von, dateiname=f"{d['titel']}.txt", **d)
+            dokumente.auswerten(doc, ki=False)
+        offen_lassen = {"Protokoll Vertriebsrunde Oktober"}
+        korrigiert = False
+        for ev in Ereignis.objects.select_related("dokument").order_by("bekannt_seit", "id"):
+            if ev.dokument.titel in offen_lassen:
+                continue
+            if not ev.artikel or ev.konfidenz < 0.4:
+                dokumente.pruefen(ev, "ablehnen", "planer")
+            elif ev.typ == "projekt" and ev.menge_pro_monat and not korrigiert:
+                dokumente.pruefen(ev, "bestaetigen", "planer", {"menge_pro_monat": round(ev.menge_pro_monat * 0.9, -1)})
+                korrigiert = True
+            else:
+                dokumente.pruefen(ev, "bestaetigen", "planer")
+        return len(docs)

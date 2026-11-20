@@ -1,0 +1,15 @@
+{% extends "planung/base.html" %}{% load planung_tags %}
+{% block title %}Akte {{ a.nummer }}{% endblock %}
+{% block content %}
+<div class="toolbar"><a href="{% url 'artikel' a.nummer %}">← {{ a.nummer }}</a></div>
+<h1>Produkt-Akte {{ a.nummer }} · {{ a.bezeichnung }}</h1>
+<div class="sub">Zeitleiste: Ist, Forecast mit WBZ-Versatz, große Abweichungen, Ereignisse aus Dokumenten (Monat, ab dem sie bekannt waren) und Hinweise.</div>
+<div class="panel"><div data-chart="chart-data"></div>{{ chart|json_script:"chart-data" }}</div>
+<div class="panel"><table><tr><th>Monat</th><th class="n">Ist</th><th class="n">Forecast</th><th class="n">Abweichung</th><th>Bekannt geworden</th><th>Wirkt ab hier</th><th>Hinweise</th></tr>
+{% for m in monate %}<tr><td>{{ m.monat|ml }}</td><td class="n">{{ m.ist|stk }}</td><td class="n">{{ m.forecast|stk }}</td>
+  <td class="n">{% if m.abw is not None %}<span class="chip {% if m.gross %}bad{% endif %}">{{ m.abw|pct:"s" }}</span>{% endif %}</td>
+  <td>{% for e in m.ereignisse %}<div><a href="{% url 'dokument' e.dokument.id %}">{{ e.get_typ_display }}</a> <span class="chip {% if e.status == 'abgelehnt' %}bad{% elif e.status == 'vorschlag' %}info{% else %}ok{% endif %}">{{ e.get_status_display }}</span><br><span class="muted">„{{ e.zitat|truncatechars:110 }}“</span></div>{% endfor %}</td>
+  <td>{% for e in m.wirkt %}<div>{{ e.get_typ_display }}{% if e.menge_pro_monat %} {{ e.menge_pro_monat|stk }} Stk./M.{% endif %}</div>{% endfor %}</td>
+  <td>{% for s in m.signale %}<div class="muted">{{ s.get_art_display }}</div>{% endfor %}</td></tr>{% endfor %}</table>
+  <p class="note">Rot: großer Fehler (≥ 30 % und ≥ 100 Stk.).</p></div>
+{% endblock %}

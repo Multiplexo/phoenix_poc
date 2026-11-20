@@ -22,6 +22,7 @@
   <a href="{% url 'hinweise' %}" class="{% if p == 'hinweise' %}on{% endif %}">Hinweise{% if offene_hinweise %}<span class="cnt">{{ offene_hinweise }}</span>{% endif %}</a>
   <a href="{% url 'accuracy' %}" class="{% if p == 'accuracy' %}on{% endif %}">Forecast Accuracy</a>
   <a href="{% url 'werke' %}" class="{% if p == 'werke' %}on{% endif %}">Forecast an die Werke</a>
+  <a href="{% url 'dokumente' %}" class="{% if p == 'dokumente' or p == 'dokument' or p == 'warteschlange' or p == 'messung' %}on{% endif %}">Dokumente{% if offene_ereignisse %}<span class="cnt" style="background:var(--pet-d)">{{ offene_ereignisse }}</span>{% endif %}</a>
   <a href="{% url 'import' %}" class="{% if p == 'import' %}on{% endif %}">Import</a>
   <a href="{% url 'matrix' %}" class="{% if p == 'matrix' %}on{% endif %}">Matrix</a>
   <a href="{% url 'parameter' %}" class="{% if p == 'parameter' %}on{% endif %}">Parameter</a>

@@ -48,6 +48,14 @@ A = [
      "Top-Rohmaterialien (z. B. Kupfer, Granulat) mit WBZ, Zuordnung zu Artikeln",
      "Forecast-Fehler dort priorisieren, wo das Material der Engpass ist (~90 % der Probleme)",
      "Priorisierung nur nach Menge", "Kann", "Einkauf / Disposition", "11.12."),
+    ("A", "Daten", "A10", "Dokumentensammlung zu den Pilotprodukten",
+     "Protokolle (MEB, Produktmanagement), Gesprächsnotizen, CRM- und Excel-Kommentare der letzten 12–24 Monate; Mails nur nach Freigabe (C7)",
+     "Pilot „Kontext lesen“: Ereignisse extrahieren und messen, ob die Ursachen großer Fehler vorher bekannt waren",
+     "Abdeckung und Vorwarnzeit nur an synthetischen Beispielen gezeigt", "Soll", "Demand Planning / Vertrieb", "11.12."),
+    ("A", "Daten", "A11", "Zuordnungsliste Kunden, Projekte und Produktfamilien → Artikel",
+     "Begriff, wie er in Dokumenten vorkommt, und zugehörige Materialnummern",
+     "Ereignisse aus Dokumenten, die keine Materialnummer nennen, dem richtigen Artikel zuordnen",
+     "Viele Ereignisse bleiben ohne Artikel und sind nicht messbar", "Soll", "Vertrieb / Key Account", "11.12."),
     # --- B. Fachlogik -----------------------------------------------------------------------------------------------
     ("B", "Fachlogik", "B1", "Die aktuelle Planungs-Excel mit Durchsprache an 3–5 echten Artikeln",
      "Datei + 2 h Walkthrough: welcher Wert kommt woher (DTO, Matrix, Excel, Gremium)",
@@ -102,6 +110,10 @@ A = [
      "Jahresbeschaffung 25–30 Mio € oder 250–300 Mio €; Bestand ~90 Mio €",
      "Tragweite von Forecast-Fehlern korrekt beziffern",
      "Nutzenargument um Faktor 10 unsicher", "Soll", "Ender Ilgaz", "Kick-off"),
+    ("C", "Rahmen", "C7", "Freigabe Datenschutz und Betriebsrat für die Auswertung von Dokumenten und E-Mails",
+     "Zweck, Quellen, Pseudonymisierung, Speicherort; KI-Zugang (Langdock EU oder Anthropic) für Dokumententexte",
+     "Dokumente und Mails mit KI auswerten, ohne gegen DSGVO oder Mitbestimmung zu verstoßen",
+     "Nur unkritische Quellen ohne Personenbezug, keine Mails", "Muss", "Datenschutz / Betriebsrat", "04.12."),
 ]
 
 # Hypothesen, die der PoC mit diesen Informationen gegen die Realität prüft
@@ -114,6 +126,7 @@ H = [
     ("H6", "Projektwissen aus dem Vertrieb kommt rechtzeitig.", "Zeitpunkt der Opportunity vs. erster Auftragseingang", "A8, A2"),
     ("H7", "Material ist der Engpass, also zählen Fehler bei kritischen Materialien mehr.", "Fehler gewichtet nach Wert und Materialkritikalität", "A6, A9"),
     ("H8", "Die Erkennungsregeln finden, was die Planer heute per Bauchgefühl sehen.", "Trefferquote gegen markierte Fälle", "B2"),
+    ("H9", "Die Ursachen teurer Forecast-Fehler stehen vorher in Dokumenten.", "Abdeckung großer Fehler durch vorher bekannte Ereignisse, Vorwarnzeit", "A10, A11, C7"),
 ]
 
 # Was der Prototyp mit den Informationen zusätzlich kann
@@ -126,6 +139,7 @@ P = [
     ("Projektpipeline als Frühindikator", "A8"),
     ("Fehler → Wirkung: Rückstände und Überbestand je Artikel", "A7"),
     ("Kennzahlen in Phoenix-Definition, abgeglichen mit interner Auswertung", "B5, B6"),
+    ("Ereignisse aus Dokumenten mit KI (Zitatpflicht, Prüfung durch Planer), Messung von Abdeckung und Vorwarnzeit", "A10, A11, C7"),
 ]
 
 OUT = Path(__file__).parent

@@ -29,7 +29,7 @@ ENV PYTHONUNBUFFERED=1 PORT=10000 PUBLISHED_DIR=/app/plattform/published
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir pandas numpy openpyxl pyyaml django==5.1.4 gunicorn==23.0.0 whitenoise==6.8.2 \
-    "psycopg[binary]==3.2.3" dj-database-url==2.3.0
+    "psycopg[binary]==3.2.3" dj-database-url==2.3.0 pypdf==5.1.0 "anthropic>=2.10"
 COPY pcpoc ./pcpoc
 COPY config ./config
 COPY plattform ./plattform

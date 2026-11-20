@@ -1,0 +1,42 @@
+{% extends "planung/base.html" %}
+{% block title %}Dokumente{% endblock %}
+{% block content %}
+<h1>Dokumente und Ereignisse</h1>
+<div class="sub">Pilot „Kontext lesen“: Protokolle, Notizen, CRM- und Excel-Kommentare hochladen. Die KI schlägt Ereignisse mit wörtlichem Zitat vor, der Planer prüft. Bestätigte Ereignisse fließen als Projektmenge, Abkündigung oder Distributor-Muster in die Planung.</div>
+{% include "planung/_doknav.html" %}
+<div class="grid2">
+<div class="panel"><h2>Hochladen</h2>
+  <form method="post" enctype="multipart/form-data">{% csrf_token %}<input type="hidden" name="aktion" value="upload">
+    <div class="formrow"><label>Quelle<select name="quelle">{% for k, v in quellen %}<option value="{{ k }}" {% if k == 'mail' and not ki.mails %}disabled{% endif %}>{{ v }}{% if k == 'mail' and not ki.mails %} (gesperrt){% endif %}</option>{% endfor %}</select></label>
+      <label>Datum (bekannt seit)<input type="date" name="datum"></label></div>
+    <div class="formrow"><label>Dateien<input type="file" name="dateien" multiple accept=".txt,.md,.eml,.docx,.pdf,.xlsx" required></label></div>
+    <div class="formrow"><label>Titel (bei einer Datei)<input name="titel" size="26"></label><label>Artikel (optional)<input name="artikel_hinweis" size="14" placeholder="A-1027, A-1028"></label></div>
+    <button class="p">Hochladen und auswerten</button>
+    <p class="note" style="margin-top:8px">Formate: txt, md, docx, pdf, xlsx (Kommentare), eml. E-Mail-Adressen und Telefonnummern werden vor dem Speichern entfernt. Ohne Datum gilt das Datum aus der Mail, sonst ist es Pflicht.</p>
+  </form>
+</div>
+<div class="panel"><h2>KI-Zugang und Freigaben</h2>
+  <dl class="kv">
+    <dt>Extraktion</dt><dd>{% if ki.anbieter %}<span class="chip ok">KI aktiv</span> {{ ki.anbieter }} · {{ ki.modell }}{% if ki.anbieter == 'langdock' %}<br><span class="muted">{{ ki.langdock_url }}</span>{% endif %}{% else %}<span class="chip warn">ohne KI</span> Regel-Fallback (nur für die Demo geeignet){% endif %}</dd>
+    <dt>E-Mails</dt><dd>{% if ki.mails %}freigegeben{% else %}gesperrt bis Freigabe Datenschutz und Betriebsrat{% endif %}</dd>
+  </dl>
+  <p class="note" style="margin-top:8px">KI einschalten: in Render <code>LANGDOCK_API_KEY</code> (EU-Hosting) oder <code>ANTHROPIC_API_KEY</code> setzen. Details: docs/DEPLOYMENT.md.</p>
+  <h2 style="margin-top:14px">Zuordnungsliste</h2>
+  <p class="note">Begriffe aus Dokumenten, die Artikeln entsprechen (Kunde, Projekt, Produktfamilie).</p>
+  <table>{% for z in zuordnungen %}<tr><td>{{ z.get_art_display }}</td><td><b>{{ z.begriff }}</b></td><td>{{ z.artikel }}</td>
+    <td><form method="post">{% csrf_token %}<input type="hidden" name="aktion" value="zuordnung_weg"><input type="hidden" name="id" value="{{ z.id }}"><button>Entfernen</button></form></td></tr>
+  {% empty %}<tr><td class="muted">Noch keine.</td></tr>{% endfor %}</table>
+  <form method="post" class="formrow">{% csrf_token %}<input type="hidden" name="aktion" value="zuordnung">
+    <label>Art<select name="art">{% for k, v in zuordnung_arten %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></label>
+    <label>Begriff<input name="begriff" size="18" required></label><label>Artikel<input name="artikel" size="14" required></label><button>Hinzufügen</button></form>
+</div>
+</div>
+<div class="panel"><h2>Dokumente</h2>
+  <table><tr><th>Datum</th><th>Titel</th><th>Quelle</th><th>Auswertung</th><th class="n">Ereignisse</th><th class="n">offen</th><th></th></tr>
+  {% for d in docs %}<tr><td>{{ d.datum|date:"d.m.Y" }}</td><td><a href="{% url 'dokument' d.id %}">{{ d.titel }}</a></td><td>{{ d.get_quelle_display }}</td>
+    <td>{% if d.status == 'fehler' %}<span class="chip bad">Fehler</span> {{ d.meldung }}{% else %}<span class="muted">{{ d.verfahren }}</span>{% endif %}</td>
+    <td class="n">{{ d.n }}</td><td class="n">{% if d.offen %}<a href="{% url 'warteschlange' %}">{{ d.offen }}</a>{% endif %}</td>
+    <td><form method="post">{% csrf_token %}<input type="hidden" name="aktion" value="neu_auswerten"><input type="hidden" name="id" value="{{ d.id }}"><button>Neu auswerten</button></form></td></tr>
+  {% empty %}<tr><td colspan="7" class="muted">Noch keine Dokumente.</td></tr>{% endfor %}</table>
+</div>
+{% endblock %}

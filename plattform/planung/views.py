@@ -30,8 +30,10 @@ STATUS_REIHE = list(STATUS_KLASSE)
 def nav_context(request):
     if not request.path.startswith(("/healthz", "/bericht", "/api")):
         try:
+            from .models import Ereignis
             return dict(planer=getattr(request, "planer", ""), features=settings.FEATURES, stand=services.stand(),
-                        offene_hinweise=Signal.objects.filter(offen=True).count(), datenquelle=settings.DATENQUELLE)
+                        offene_hinweise=Signal.objects.filter(offen=True).count(), datenquelle=settings.DATENQUELLE,
+                        offene_ereignisse=Ereignis.objects.filter(status="vorschlag").count())
         except Exception:
             return {}
     return {}

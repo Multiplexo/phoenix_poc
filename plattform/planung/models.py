@@ -218,3 +218,79 @@ class Protokoll(models.Model):
 
     class Meta:
         ordering = ["-am"]
+
+
+# ---------------------------------------------------------------- Dokumente und Ereignisse (Pilot "Kontext lesen")
+class Zuordnung(models.Model):
+    """Übersetzt Begriffe aus Dokumenten (Kunde, Projekt, Produktfamilie) in Artikelnummern."""
+    ARTEN = [("kunde", "Kunde"), ("projekt", "Projekt"), ("produktfamilie", "Produktfamilie")]
+    begriff = models.CharField(max_length=120)
+    art = models.CharField(max_length=20, choices=ARTEN)
+    artikel = models.CharField(max_length=400, help_text="Artikelnummern, kommagetrennt")
+    notiz = models.CharField(max_length=200, blank=True)
+    erfasst_von = models.CharField(max_length=60)
+    erfasst_am = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["art", "begriff"]
+
+    def artikel_liste(self):
+        return [a.strip() for a in self.artikel.split(",") if a.strip()]
+
+
+class Dokument(models.Model):
+    QUELLEN = [("protokoll", "Protokoll (z. B. MEB)"), ("notiz", "Gesprächsnotiz"), ("crm", "CRM-Notiz"),
+               ("excel", "Excel-Kommentar"), ("mail", "E-Mail"), ("sonstiges", "Sonstiges")]
+    STATUS = [("offen", "Noch nicht ausgewertet"), ("fertig", "Ausgewertet"), ("fehler", "Fehler")]
+    titel = models.CharField(max_length=200)
+    quelle = models.CharField(max_length=20, choices=QUELLEN)
+    dateiname = models.CharField(max_length=255, blank=True)
+    datum = models.DateField(help_text="Datum des Dokuments = ab wann die Information bekannt war")
+    text = models.TextField(help_text="ausgelesener, pseudonymisierter Text")
+    artikel_hinweis = models.CharField(max_length=200, blank=True, help_text="optional: betroffene Artikel")
+    hochgeladen_von = models.CharField(max_length=60)
+    hochgeladen_am = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, choices=STATUS, default="offen")
+    verfahren = models.CharField(max_length=40, blank=True)  # z. B. claude-opus-5-5 oder regel-fallback
+    meldung = models.TextField(blank=True)
+    ausgewertet_am = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-datum", "-id"]
+
+
+class Ereignis(models.Model):
+    TYPEN = [("projekt", "Projektmenge"), ("abkuendigung", "Abkündigung"), ("lagerauffuellung", "Lagerauffüllung Distributor"),
+             ("nachfrage_steigt", "Nachfrage steigt"), ("nachfrage_sinkt", "Nachfrage sinkt"), ("lieferproblem", "Lieferproblem"),
+             ("preis", "Preisänderung"), ("sonstiges", "Sonstiges")]
+    STATUS = [("vorschlag", "Vorschlag"), ("bestaetigt", "Bestätigt"), ("korrigiert", "Korrigiert bestätigt"), ("abgelehnt", "Abgelehnt")]
+    dokument = models.ForeignKey(Dokument, on_delete=models.CASCADE, related_name="ereignisse")
+    artikel = models.CharField(max_length=40, db_index=True, blank=True)
+    typ = models.CharField(max_length=30, choices=TYPEN)
+    richtung = models.SmallIntegerField(default=0)  # +1 mehr Bedarf, -1 weniger, 0 offen
+    menge_pro_monat = models.FloatField(null=True, blank=True)
+    ab = models.DateField(null=True, blank=True)
+    bis = models.DateField(null=True, blank=True)
+    kunde = models.CharField(max_length=120, blank=True)
+    bekannt_seit = models.DateField()
+    zitat = models.TextField()
+    zitat_geprueft = models.BooleanField(default=False)  # Zitat kommt wörtlich im Dokument vor
+    begruendung = models.TextField(blank=True)
+    konfidenz = models.FloatField(default=0.5)
+    status = models.CharField(max_length=20, choices=STATUS, default="vorschlag")
+    original = models.JSONField(default=dict)  # Vorschlag der KI vor Korrektur (für Treffsicherheit)
+    geprueft_von = models.CharField(max_length=60, blank=True)
+    geprueft_am = models.DateTimeField(null=True, blank=True)
+    uebernommen = models.CharField(max_length=120, blank=True)
+
+    class Meta:
+        ordering = ["-bekannt_seit", "-id"]
+
+
+class Abkuendigung(models.Model):
+    artikel = models.CharField(max_length=40, db_index=True)
+    ab = models.DateField(help_text="erster Monat ohne Bedarf")
+    quelle = models.CharField(max_length=200, blank=True)
+    erfasst_von = models.CharField(max_length=60)
+    erfasst_am = models.DateTimeField(auto_now_add=True)
+    aktiv = models.BooleanField(default=True)

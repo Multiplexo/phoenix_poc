@@ -1,11 +1,16 @@
 from django.urls import path, re_path
 
-from planung import views
+from planung import views, views_dokumente
 
 urlpatterns = [
     path("", views.uebersicht, name="uebersicht"),
     path("artikel/<str:nummer>/", views.artikel_detail, name="artikel"),
     path("import/", views.importe, name="import"),
+    path("dokumente/", views_dokumente.liste, name="dokumente"),
+    path("dokumente/<int:pk>/", views_dokumente.detail, name="dokument"),
+    path("ereignisse/", views_dokumente.warteschlange, name="warteschlange"),
+    path("ereignisse/messung/", views_dokumente.messung, name="messung"),
+    path("artikel/<str:nummer>/akte/", views_dokumente.akte, name="akte"),
     path("matrix/", views.matrix, name="matrix"),
     path("parameter/", views.parameter, name="parameter"),
     path("accuracy/", views.accuracy, name="accuracy"),

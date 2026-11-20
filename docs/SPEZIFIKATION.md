@@ -115,7 +115,24 @@ Protokoll (wer, wann, was)
 | Netting | Bestand, Transit, Intercompany | A7 |
 | Ausreißer-Regel | > 300 % des 12-Monats-Schnitts + Einzelpeak | B2 |
 
-## 8. Aufwand bis zur Produktivreife (Schätzung, nach PoC zu verfeinern)
+## 8. Pilot „Kontext lesen“: Dokumente und Ereignisse (`plattform/planung/dokumente.py`)
+
+1. **Upload** von Protokollen, Gesprächsnotizen, CRM- und Excel-Kommentaren (txt, md, docx, pdf, xlsx) sowie, nach Freigabe, E-Mails (.eml). Das Dokumentdatum gilt als „bekannt seit“. E-Mail-Adressen und Telefonnummern werden entfernt; von Mails werden nur Betreff, Datum und Text übernommen, nicht Absender oder Empfänger.
+2. **Extraktion** durch ein Sprachmodell: Langdock (EU) oder Anthropic direkt. Ergebnis sind Ereignisse mit Typ (Projekt, Abkündigung, Lagerauffüllung, Nachfrage steigt/sinkt, Lieferproblem, Preis), Richtung, Menge/Monat, ab/bis, Kunde, **wörtlichem Zitat**, Begründung und Konfidenz. Artikel werden nur über die Nummer oder die Zuordnungsliste (Kunde/Projekt/Produktfamilie → Artikel) gesetzt. Ohne KI-Zugang läuft ein einfacher Regel-Fallback, gekennzeichnet und nur für Demos gedacht.
+3. **Zitatprüfung**: Jedes Zitat muss wörtlich im Dokument stehen. Sonst wird es markiert und die Konfidenz auf höchstens 20 % gesetzt.
+4. **Prüfung** durch den Planer: bestätigen, korrigieren oder ablehnen. Übernahme:
+   - Projekt (künftig) → Projektmenge
+   - Projekt (bereits gestartet) → nur Kontext
+   - Abkündigung → Bedarf ab dem Monat 0
+   - Lagerauffüllung → Distributor-Muster für die Ausreißer-Bewertung
+   - übrige Typen → Kontext-Ereignis in der Produkt-Akte
+5. **Messung**:
+   - Großer Fehler: |Ist − Forecast| ≥ 30 % und ≥ 100 Stk., Forecast mit WBZ-Versatz.
+   - Abgedeckt: Es gibt ein bestätigtes Ereignis zum Artikel, das höchstens 12 Monate vor dem Fehlermonat bekannt war und in die richtige Richtung zeigt.
+   - Kennzahlen: Abdeckung, Anteil „vor Forecast-Abgabe bekannt“, Vorwarnzeit (Monate) und Treffsicherheit der Extraktion (bestätigt/korrigiert ÷ geprüft).
+   - Auswertung je Ereignistyp als Grundlage für eine spätere Gewichtung.
+
+## 9. Aufwand bis zur Produktivreife (Schätzung, nach PoC zu verfeinern)
 
 | Baustein | PT |
 |---|---|

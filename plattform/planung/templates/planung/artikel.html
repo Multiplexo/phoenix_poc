@@ -1,7 +1,7 @@
 {% extends "planung/base.html" %}{% load planung_tags %}
 {% block title %}{{ a.nummer }}{% endblock %}
 {% block content %}
-<div class="toolbar"><a href="{% url 'uebersicht' %}">← Übersicht</a></div>
+<div class="toolbar"><a href="{% url 'uebersicht' %}">← Übersicht</a> <a class="btn" href="{% url 'akte' a.nummer %}">Produkt-Akte (Dokumente und Ereignisse)</a></div>
 <h1>{{ a.nummer }} · {{ a.bezeichnung }}</h1>
 <div class="sub">{{ a.produktgruppe }} · Cluster <b>{{ a.cluster }}</b>{% if a.cluster_quelle == "planer" %} (vom Planer gesetzt){% endif %} · WBZ-Versatz {{ lag }} Monate
   {% if vs %} · Vorschlag vom {{ vs.lauf.erstellt_am|date:"d.m.Y H:i" }} ({{ vs.lauf.get_anlass_display }}) <span class="chip {% if vs.status == 'freigegeben' %}ok{% elif vs.status == 'abgelehnt' %}bad{% else %}info{% endif %}">{{ vs.get_status_display }}</span>{% endif %}</div>

@@ -1,0 +1,31 @@
+{% extends "planung/base.html" %}{% load planung_tags %}
+{% block title %}Prüf-Warteschlange{% endblock %}
+{% block content %}
+<h1>Prüf-Warteschlange</h1>
+<div class="sub">Vorgeschlagene Ereignisse prüfen: Zitat lesen, Felder bei Bedarf korrigieren, bestätigen oder ablehnen. Jede Entscheidung zählt in die Treffsicherheit der Extraktion.</div>
+{% include "planung/_doknav.html" %}
+{% for e in offen %}
+<form method="post" class="panel">{% csrf_token %}<input type="hidden" name="id" value="{{ e.id }}">
+  <div class="toolbar" style="margin-bottom:4px"><b>{{ e.get_typ_display }}</b>
+    <span class="chip {% if e.konfidenz >= 0.7 %}ok{% elif e.konfidenz >= 0.4 %}info{% else %}warn{% endif %}">Konfidenz {{ e.konfidenz|pct }}</span>
+    {% if e.zitat_geprueft %}<span class="chip ok">Zitat im Dokument gefunden</span>{% else %}<span class="chip bad">Zitat nicht im Dokument</span>{% endif %}
+    <span class="muted">aus <a href="{% url 'dokument' e.dokument.id %}">{{ e.dokument.titel }}</a>, bekannt seit {{ e.bekannt_seit|date:"d.m.Y" }}</span></div>
+  <blockquote style="margin:6px 0 10px;padding:6px 12px;border-left:3px solid var(--pet);background:var(--neutral-bg)">„{{ e.zitat }}“</blockquote>
+  {% if e.begruendung %}<p class="note">{{ e.begruendung }}</p>{% endif %}
+  <div class="formrow">
+    <label>Artikel<input name="artikel" value="{{ e.artikel }}" list="artikel" size="9"></label>
+    <label>Typ<select name="typ">{% for k, v in typen %}<option value="{{ k }}" {% if k == e.typ %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></label>
+    <label>Richtung<select name="richtung"><option value="1" {% if e.richtung == 1 %}selected{% endif %}>mehr Bedarf</option><option value="-1" {% if e.richtung == -1 %}selected{% endif %}>weniger</option><option value="0" {% if e.richtung == 0 %}selected{% endif %}>offen</option></select></label>
+    <label>Stk./Monat<input name="menge_pro_monat" value="{{ e.menge_pro_monat|default_if_none:'' }}" size="7"></label>
+    <label>ab<input type="month" name="ab" value="{{ e.ab|date:'Y-m' }}"></label><label>bis<input type="month" name="bis" value="{{ e.bis|date:'Y-m' }}"></label>
+    <button class="p" name="aktion" value="bestaetigen">Bestätigen</button><button class="d" name="aktion" value="ablehnen">Ablehnen</button>
+  </div>
+</form>
+{% empty %}<div class="panel muted">Keine offenen Vorschläge.</div>{% endfor %}
+<datalist id="artikel">{% for a in artikel %}<option>{{ a }}</option>{% endfor %}</datalist>
+<div class="panel"><h2>Zuletzt geprüft</h2>
+  <table><tr><th>Geprüft</th><th>Ereignis</th><th>Artikel</th><th>Ergebnis</th><th>Übernommen als</th></tr>
+  {% for e in erledigt %}<tr><td>{{ e.geprueft_am|date:"d.m.Y H:i" }} · {{ e.geprueft_von }}</td><td>{{ e.get_typ_display }}</td><td>{{ e.artikel|default:"–" }}</td>
+    <td><span class="chip {% if e.status == 'abgelehnt' %}bad{% else %}ok{% endif %}">{{ e.get_status_display }}</span></td><td class="muted">{{ e.uebernommen }}</td></tr>{% endfor %}</table>
+</div>
+{% endblock %}

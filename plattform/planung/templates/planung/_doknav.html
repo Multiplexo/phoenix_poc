@@ -1,0 +1,7 @@
+{% with p=request.resolver_match.url_name %}
+<div class="toolbar">
+  <a class="btn {% if p == 'dokumente' %}p{% endif %}" href="{% url 'dokumente' %}">Dokumente</a>
+  <a class="btn {% if p == 'warteschlange' %}p{% endif %}" href="{% url 'warteschlange' %}">Prüf-Warteschlange{% if offene_ereignisse %} ({{ offene_ereignisse }}){% endif %}</a>
+  <a class="btn {% if p == 'messung' %}p{% endif %}" href="{% url 'messung' %}">Messung: was war vorher bekannt?</a>
+</div>
+{% endwith %}

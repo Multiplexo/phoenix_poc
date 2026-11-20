@@ -28,6 +28,13 @@ Ein Web Service (Docker) im Workspace „Multiplexo GmbH“, Region Frankfurt, d
 | `FEATURE_FREIGABE` | nein | `1` (Standard) Freigabe-Workflow, `0` Forecasts gelten sofort als freigegeben |
 | `FEATURE_ZWEITE_STUFE` | nein | `1` zweite Freigabestufe (Vier-Augen) |
 | `FEATURE_ROLLEN`, `FREIGABE_STUFE1`, `FREIGABE_STUFE2` | nein | Freigabe nur durch genannte Benutzer |
+| `LANGDOCK_API_KEY` | nein | KI-Extraktion über Langdock (EU-Hosting). Als Secret anlegen. |
+| `LANGDOCK_BASE_URL` | nein | Standard `https://api.langdock.com/anthropic/eu` (Anthropic-kompatible API; vor Einsatz mit der Langdock-Doku abgleichen) |
+| `LANGDOCK_MODELL` | nein | Modellname, wie Langdock ihn für die API anbietet |
+| `ANTHROPIC_API_KEY` | nein | alternativ: KI-Extraktion direkt bei Anthropic |
+| `KI_ANBIETER` | nein | `langdock` oder `anthropic` erzwingen; ohne Angabe: Langdock, wenn dessen Schlüssel gesetzt ist |
+| `KI_EXTRAKTION` | nein | `aus` schaltet die KI ab (Regel-Fallback, nur für Demos) |
+| `DOKUMENTE_MAILS_ERLAUBT` | nein | `1` erlaubt den Upload von E-Mails (.eml); erst nach Freigabe durch Datenschutz und Betriebsrat |
 | `SEED_DEMO` | nein | `1`: bei leerer Datenbank synthetische Demo-Daten laden |
 
 ## Echte Daten

@@ -17,6 +17,8 @@ Was wir von Phoenix brauchen, um den PoC aussagekräftig zu machen. Jede Anforde
 | A7 | Lieferfähigkeit und Bestände (monatlich) | Rückstände/Backorders, Liefertreue, Monatsendbestand je Artikel, 12 Monate | Forecast-Fehler mit Wirkung verbinden (Lieferunfähigkeit vs. Überbestand) | Wirkung nur behauptet, nicht gezeigt | Kann | Supply Chain / Controlling | 11.12. |
 | A8 | Projektpipeline aus dem Vertrieb (CRM) | Opportunities mit Artikel/Produktgruppe, Menge, Start, Wahrscheinlichkeit; historische Stände | Bedarfstreiber und Chancen/Risiken früh erkennen; Projektwissen messbar machen | Projektwissen nur aus Gesprächen | Soll | Vertrieb / Key Account | 11.12. |
 | A9 | Kritische Materialien je Artikel | Top-Rohmaterialien (z. B. Kupfer, Granulat) mit WBZ, Zuordnung zu Artikeln | Forecast-Fehler dort priorisieren, wo das Material der Engpass ist (~90 % der Probleme) | Priorisierung nur nach Menge | Kann | Einkauf / Disposition | 11.12. |
+| A10 | Dokumentensammlung zu den Pilotprodukten | Protokolle (MEB, Produktmanagement), Gesprächsnotizen, CRM- und Excel-Kommentare der letzten 12–24 Monate; Mails nur nach Freigabe (C7) | Pilot „Kontext lesen“: Ereignisse extrahieren und messen, ob die Ursachen großer Fehler vorher bekannt waren | Abdeckung und Vorwarnzeit nur an synthetischen Beispielen gezeigt | Soll | Demand Planning / Vertrieb | 11.12. |
+| A11 | Zuordnungsliste Kunden, Projekte und Produktfamilien → Artikel | Begriff, wie er in Dokumenten vorkommt, und zugehörige Materialnummern | Ereignisse aus Dokumenten, die keine Materialnummer nennen, dem richtigen Artikel zuordnen | Viele Ereignisse bleiben ohne Artikel und sind nicht messbar | Soll | Vertrieb / Key Account | 11.12. |
 
 ## B. Fachlogik und Wissen
 
@@ -40,6 +42,7 @@ Was wir von Phoenix brauchen, um den PoC aussagekräftig zu machen. Jede Anforde
 | C4 | SAP-IBP-Stand | Zeitplan, Planungsebenen, geplante Statistik und Fehlerkennzahlen, Ansprechpartner IBP-Projekt | Empfehlungen so formulieren, dass sie in IBP konfigurierbar sind | Abschlussempfehlung ohne IBP-Bezug | Soll | IBP-Projektleitung | 04.12. |
 | C5 | Freigaben Datenschutz und Informationssicherheit | Hosting des Berichts (Render, EU/Frankfurt) mit Passwortschutz; optional Sprachmodell nur für Gesprächsnotizen | Arbeiten mit Echtdaten außerhalb von Phoenix-Systemen | Echtdaten nur lokal bei Multiplexo, Bericht nur als Datei | Muss | Datenschutz / InfoSec | Kick-off |
 | C6 | Klärung Mengengerüst | Jahresbeschaffung 25–30 Mio € oder 250–300 Mio €; Bestand ~90 Mio € | Tragweite von Forecast-Fehlern korrekt beziffern | Nutzenargument um Faktor 10 unsicher | Soll | Ender Ilgaz | Kick-off |
+| C7 | Freigabe Datenschutz und Betriebsrat für die Auswertung von Dokumenten und E-Mails | Zweck, Quellen, Pseudonymisierung, Speicherort; KI-Zugang (Langdock EU oder Anthropic) für Dokumententexte | Dokumente und Mails mit KI auswerten, ohne gegen DSGVO oder Mitbestimmung zu verstoßen | Nur unkritische Quellen ohne Personenbezug, keine Mails | Muss | Datenschutz / Betriebsrat | 04.12. |
 
 ## Hypothesen, die wir damit challengen
 
@@ -53,6 +56,7 @@ Was wir von Phoenix brauchen, um den PoC aussagekräftig zu machen. Jede Anforde
 | H6 | Projektwissen aus dem Vertrieb kommt rechtzeitig. | Zeitpunkt der Opportunity vs. erster Auftragseingang | A8, A2 |
 | H7 | Material ist der Engpass, also zählen Fehler bei kritischen Materialien mehr. | Fehler gewichtet nach Wert und Materialkritikalität | A6, A9 |
 | H8 | Die Erkennungsregeln finden, was die Planer heute per Bauchgefühl sehen. | Trefferquote gegen markierte Fälle | B2 |
+| H9 | Die Ursachen teurer Forecast-Fehler stehen vorher in Dokumenten. | Abdeckung großer Fehler durch vorher bekannte Ereignisse, Vorwarnzeit | A10, A11, C7 |
 
 ## Was der Prototyp damit zusätzlich zeigen kann
 
@@ -66,3 +70,4 @@ Was wir von Phoenix brauchen, um den PoC aussagekräftig zu machen. Jede Anforde
 | Projektpipeline als Frühindikator | A8 |
 | Fehler → Wirkung: Rückstände und Überbestand je Artikel | A7 |
 | Kennzahlen in Phoenix-Definition, abgeglichen mit interner Auswertung | B5, B6 |
+| Ereignisse aus Dokumenten mit KI (Zitatpflicht, Prüfung durch Planer), Messung von Abdeckung und Vorwarnzeit | A10, A11, C7 |

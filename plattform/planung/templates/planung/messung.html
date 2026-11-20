@@ -1,0 +1,34 @@
+{% extends "planung/base.html" %}{% load planung_tags %}
+{% block title %}Messung{% endblock %}
+{% block content %}
+<h1>Was war vorher bekannt?</h1>
+<div class="sub">Große Forecast-Fehler (Forecast mit WBZ-Versatz gegen Ist) gegen bestätigte Ereignisse aus Dokumenten: Stand die Ursache vorher schon in einem Dokument, in die richtige Richtung und höchstens 12 Monate vorher?</div>
+{% include "planung/_doknav.html" %}
+{% if demo %}<div class="msg warning">Beispieldokumente sind synthetisch. Die Zahlen zeigen nur, wie die Messung funktioniert; aussagekräftig wird sie mit echten Phoenix-Dokumenten.</div>{% endif %}
+<form class="toolbar" method="get">Großer Fehler ab <input name="schwelle" value="{{ schwelle_pct }}" size="3"> % und <input name="min" value="{{ min_stueck }}" size="4"> Stk. <button>Neu rechnen</button></form>
+<div class="kpis">
+  <div class="kpi"><div class="l">Abdeckung</div><div class="v">{{ m.abdeckung|pct }}</div><div class="h">{{ m.n_abgedeckt }} von {{ m.n_fehler }} großen Fehlern vorher dokumentiert</div></div>
+  <div class="kpi"><div class="l">Vor Forecast-Abgabe bekannt</div><div class="v">{{ m.vor_abgabe|pct }}</div><div class="h">hätte in den damaligen Forecast einfließen können</div></div>
+  <div class="kpi g"><div class="l">Vorwarnzeit</div><div class="v">{% if m.vorwarnzeit is not None %}{{ m.vorwarnzeit|floatformat:1 }} M.{% else %}–{% endif %}</div><div class="h">Ø Monate zwischen Dokument und Fehler</div></div>
+  <div class="kpi"><div class="l">Treffsicherheit Extraktion</div><div class="v">{{ m.treffsicherheit|pct }}</div><div class="h">{{ m.n_geprueft }} geprüft · unverändert {{ m.exakt|pct }} · Zitate belegt {{ m.zitat_ok|pct }}</div></div>
+</div>
+<div class="grid2">
+<div class="panel"><h2>Je Ereignistyp</h2>
+  <table><tr><th>Typ</th><th class="n">geprüft</th><th class="n">bestätigt</th><th class="n">erklärte Fehler</th><th class="n">Vorwarnzeit</th></tr>
+  {% for t in m.je_typ %}<tr><td>{{ t.typ }}</td><td class="n">{{ t.geprueft }}</td><td class="n">{{ t.bestaetigt }}</td><td class="n">{{ t.faelle }}</td><td class="n">{% if t.vorwarnzeit is not None %}{{ t.vorwarnzeit|floatformat:1 }} M.{% else %}–{% endif %}</td></tr>
+  {% empty %}<tr><td colspan="5" class="muted">Noch keine geprüften Ereignisse.</td></tr>{% endfor %}</table>
+  <p class="note">In der Produktivlösung werden die Ereignistypen nach dieser gemessenen Vorhersagekraft gewichtet.</p></div>
+<div class="panel"><h2>So wird gemessen</h2>
+  <ul class="note" style="padding-left:18px">
+    <li>Großer Fehler: |Ist − Forecast| ≥ Schwelle (relativ) und ≥ Mindestmenge; Forecast mit WBZ-Versatz.</li>
+    <li>Abgedeckt: bestätigtes Ereignis zum Artikel, bekannt vor dem Fehlermonat (höchstens 12 Monate), Richtung passt (Ist höher → „mehr Bedarf“).</li>
+    <li>Vor Forecast-Abgabe: Ereignis war schon bekannt, als der verglichene Forecast abgegeben wurde.</li>
+    <li>Treffsicherheit: Anteil bestätigter (auch korrigierter) Vorschläge an allen geprüften.</li>
+  </ul></div>
+</div>
+<div class="panel"><h2>Große Fehler</h2>
+  <table><tr><th>Artikel</th><th>Monat</th><th class="n">Forecast</th><th class="n">Ist</th><th class="n">Abweichung</th><th>Vorher bekannt?</th></tr>
+  {% for f in faelle %}<tr><td><a href="{% url 'akte' f.wert.artikel %}">{{ f.wert.artikel }}</a></td><td>{{ f.wert.monat|ml }}</td><td class="n">{{ f.wert.forecast|stk }}</td><td class="n">{{ f.wert.ist|stk }}</td><td class="n">{{ f.abweichung|pct:"s" }}</td>
+    <td>{% if f.ereignis %}<span class="chip ok">ja, {{ f.vorwarnzeit }} M. vorher</span> {{ f.ereignis.get_typ_display }} · <a href="{% url 'dokument' f.ereignis.dokument.id %}">{{ f.ereignis.dokument.titel|truncatechars:40 }}</a>{% if f.vor_abgabe %} · vor Forecast-Abgabe{% endif %}{% else %}<span class="muted">nein</span>{% endif %}</td></tr>
+  {% empty %}<tr><td colspan="6" class="muted">Keine großen Fehler.</td></tr>{% endfor %}</table></div>
+{% endblock %}

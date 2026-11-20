@@ -3,7 +3,8 @@
 Prototyp zum Angebot **AG0021** („PoC zur KI-basierten Bedarfsplanung der BU Paderborn“). Er deckt zwei Dinge ab:
 
 1. **Planungsplattform** (`plattform/`, Django): Das komplette Entwickler-Briefing ist umgesetzt. Dazu gehören Generator (DTO + Matrix + Parameter → Forecast je Standort) mit Netting Brutto → Netto, versionierte Forecast-Stände mit Freigabe (1 oder 2 Stufen, per Feature-Flag), Loop (Soll-Ist mit WBZ-Versatz, MAPE/Bias über die Zeit, Ping bei Abweichung, Neuberechnung), Matrix-Pflege, Parameter-Governance und Forecast an die Werke. Zuordnung jeder Briefing-Anforderung: [`docs/BRIEFING_ABDECKUNG.md`](docs/BRIEFING_ABDECKUNG.md), Fachlogik: [`docs/SPEZIFIKATION.md`](docs/SPEZIFIKATION.md).
-2. **Voranalyse** (`pcpoc/`, Bericht und Präsentationen): die Leistungen aus dem Angebot, also Prognosegüte, Wirkung manueller Anpassungen, Empfehlungen mit Datenbasis und Konfidenz, Rückvergleich und Wissensbasis. Die Voranalyse läuft auch in der Plattform, in der Detailansicht jedes Artikels.
+2. **Pilot „Kontext lesen“** (Plattform → Dokumente): Protokolle, Notizen, CRM-/Excel-Kommentare und freigegebene Mails hochladen. Die KI (Langdock EU oder Anthropic) schlägt Ereignisse mit wörtlichem Zitat vor, Planer bestätigen. Gemessen wird, wie viele große Forecast-Fehler vorher in Dokumenten standen und wie früh (Abdeckung, Vorwarnzeit, Treffsicherheit).
+3. **Voranalyse** (`pcpoc/`, Bericht und Präsentationen): die Leistungen aus dem Angebot, also Prognosegüte, Wirkung manueller Anpassungen, Empfehlungen mit Datenbasis und Konfidenz, Rückvergleich und Wissensbasis. Die Voranalyse läuft auch in der Plattform, in der Detailansicht jedes Artikels.
 
 SAP IBP bleibt das führende System; die Plattform ist die Brücke bis dahin und der Ort, an dem die Regeln für IBP belastbar gemacht werden.
 
