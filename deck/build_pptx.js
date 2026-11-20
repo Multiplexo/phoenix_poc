@@ -77,7 +77,7 @@ function chrome(s, f) {
   const n = spec.kapitel.length, gap = 0.1, sw = (CW - gap * (n - 1)) / n;
   spec.kapitel.forEach((_, j) => s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: X0 + j * (sw + gap), y: 7.0, w: sw, h: 0.035, rectRadius: 0.02,
     fill: { color: j === k ? HEX.gold : HEX.linie }, line: { type: "none" }, objectName: `Fortschritt ${j + 1}` }));
-  if (f.demo) s.addText("DEMO-DATEN", { x: X0 + 2.0, y: 0.52, w: 1.75, h: 0.32, fontSize: 9, bold: true, charSpacing: 2.5, color: C.accent2,
+  if (f.demo || f.etikett) s.addText((f.etikett || "Demo-Daten").toUpperCase(), { x: X0 + 2.0, y: 0.52, w: f.etikett ? 3.0 : 1.75, h: 0.32, fontSize: 9, bold: true, charSpacing: 2.5, color: C.accent2,
     align: "center", valign: "middle", margin: 0, shape: pres.shapes.ROUNDED_RECTANGLE, rectRadius: 0.16, line: { color: HEX.gold, width: 1 },
     isTextBox: true, objectName: "Demo-Hinweis" });
 }

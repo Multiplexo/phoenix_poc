@@ -262,7 +262,8 @@ def importe(request):
             if art == "ae_welt":
                 from . import ae_welt
                 imp = ae_welt.importiere(daten, f.name, request.planer, dt.date.fromisoformat(st) if st else None,
-                                         ablage=ablage.speichern(art, f.name, daten))
+                                         ablage=ablage.speichern(art, f.name, daten),
+                                         matrix_uebernehmen=bool(request.POST.get("matrix_uebernehmen")))
                 messages.success(request, f"AE Welt: {imp.zeilen} Zeilen importiert. {imp.meldungen}")
                 return redirect("ae_welt")
             df = adapters.DateiQuelle(ablage.Upload(f.name, daten)).tabelle(art)

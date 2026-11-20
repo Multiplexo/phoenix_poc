@@ -18,13 +18,19 @@ from . import services
 from .models import AEWeltZeile, ImportLauf
 
 
-def importiere(daten: bytes, dateiname: str, von: str, stand: dt.date | None = None, ablage: str = "") -> ImportLauf:
+def importiere(daten: bytes, dateiname: str, von: str, stand: dt.date | None = None, ablage: str = "",
+               matrix_uebernehmen: bool = False) -> ImportLauf:
     suffix = Path(dateiname).suffix.lower() or ".xlsx"
     with tempfile.NamedTemporaryFile(suffix=suffix) as f:
         f.write(daten)
         f.flush()
         d = pae.lesen(f.name)
     t, monate = d["tabelle"], d["monate"]
+    if d.get("stand_bericht"):  # „Last Refreshed“ aus dem SAP-Bericht ist genauer als das Formular
+        try:
+            stand = dt.date.fromisoformat(d["stand_bericht"])
+        except ValueError:
+            pass
     with transaction.atomic():
         imp = ImportLauf.objects.create(art="ae_welt", dateiname=dateiname, von=von, stand=stand, ablage=ablage, zeilen=len(t))
         excel_sp = [c for c in t.columns if c.startswith("excel_")]
@@ -36,7 +42,9 @@ def importiere(daten: bytes, dateiname: str, von: str, stand: dt.date | None = N
         b = pae.befunde(t, monate, stand)
         imp.pruefung = dict(monate=monate, blatt=d["blatt"], synthetisch=d["synthetisch"] or "synthetisch" in dateiname.lower(),
                             excel_vorhanden=d["excel_vorhanden"],
-                            formeln=d["formeln"], hinweise=[])
+                            formeln=d["formeln"], hinweise=[], werke=d.get("werke", {}),
+                            fenster_je_blatt=d.get("fenster_je_blatt", {}),
+                            anonymisiert="anonym" in dateiname.lower())
         meld = [f"{b['artikel']} Materialien, {b['laender']} Länder, {b['monate']} Monate ({b['von']} bis {b['bis']})"]
         if b["div0"]:
             meld.append(f"{b['div0']} Zeilen mit AE6 = 0 (#DIV/0! im Faktor)")
@@ -45,7 +53,23 @@ def importiere(daten: bytes, dateiname: str, von: str, stand: dt.date | None = N
         imp.meldungen = "; ".join(meld)
         imp.save()
         services.protokoll(von, f"Import {imp.pk}", "AE Welt importiert", f"{dateiname}: {len(t)} Zeilen")
+        if matrix_uebernehmen and d.get("werke"):
+            matrix_anlegen(imp, t, d["werke"], von)
     return imp
+
+
+def matrix_anlegen(imp: ImportLauf, t: pd.DataFrame, werke: dict, von: str) -> None:
+    """Länderzuordnung aus „Länder W…“ als neue Matrix-Version (Material *, Land ISO → Werk). Nur auf Wunsch,
+    weil sie die Werksaufteilung aller folgenden Forecast-Läufe bestimmt."""
+    from .models import MatrixEintrag, MatrixVersion
+    standard = str(services.params().get("aewelt", {}).get("standard_werk", "1000"))
+    werk_von = pae.werk_je_land(werke, standard)
+    ab = next((w["gueltig_ab"] for w in werke.values() if w.get("gueltig_ab")), None)
+    v = MatrixVersion.objects.create(bezeichnung=f"AE Welt {imp.am:%m/%Y}", gueltig_ab=pd.Period(ab, "M").start_time.date() if ab
+                                     else (imp.stand or imp.am.date()), erstellt_von=von, notiz=f"aus {imp.dateiname}")
+    MatrixEintrag.objects.bulk_create([MatrixEintrag(version=v, artikel="*", land=pae.LAND_ISO.get(l, l[:4]), standort=f"Werk {werk_von[l]}")
+                                       for l in sorted(t["land"].unique())])
+    services.protokoll(von, f"Import {imp.pk}", "Matrix aus AE Welt angelegt", v.bezeichnung)
 
 
 def letzter() -> ImportLauf | None:
@@ -73,12 +97,25 @@ def auswertung(imp: ImportLauf | None = None, versatz: int | None = None) -> dic
     p = services.params()
     versatz = versatz or int(p["accuracy"].get("lag_monate_default", 4))
     b = pae.befunde(t, monate, imp.stand)
-    rr = pae.rueckrechnung(t, monate, p["baseline"]["gewichte"], versatz=versatz, ohne_letzten=b["letzter_laufend"])
+    werke = imp.pruefung.get("werke", {})
+    standard = str(p.get("aewelt", {}).get("standard_werk", "1000"))
+    rr = pae.rueckrechnung(t, monate, p["baseline"]["gewichte"], versatz=versatz, ohne_letzten=b["letzter_laufend"],
+                           werke=werke, standard_werk=standard)
+    werk_von = pae.werk_je_land(werke, standard)
+    x = pae.matrix(t, monate)
+    je_werk = pd.Series(x.sum(axis=1)).groupby(t["land"].map(werk_von).to_numpy()).sum()
+    werk_anteile = [dict(werk=w, anteil=float(v / je_werk.sum())) for w, v in je_werk.sort_values(ascending=False).items()] if je_werk.sum() else []
     fa = pae.formelabgleich(t, monate)
     formeln = imp.pruefung.get("formeln", {})
-    n_fest = sum(v.get("n_fest", 0) for v in formeln.values())
+    nur_werte = bool(formeln) and all(v.get("nur_werte") for v in formeln.values())
+    n_fest = 0 if nur_werte else sum(v.get("n_fest", 0) for v in formeln.values() if not v.get("nur_werte"))
     n_abw = sum(v.get("n_abweichend", 0) for v in formeln.values())
     return dict(vorhanden=True, imp=imp, synthetisch=imp.pruefung.get("synthetisch", False),
                 excel_vorhanden=imp.pruefung.get("excel_vorhanden", False), befunde=b, rueck=rr, abgleich=fa,
                 formeln=formeln, formeln_fest=n_fest, formeln_abweichend=n_abw,
-                formeln_ok=bool(formeln) and n_fest == 0 and n_abw == 0, versatz=versatz)
+                formeln_ok=bool(formeln) and not nur_werte and n_fest == 0 and n_abw == 0, nur_werte=nur_werte, versatz=versatz,
+                werke=werke, werk_anteile=werk_anteile, standard_werk=standard,
+                fenster_je_blatt=imp.pruefung.get("fenster_je_blatt", {}),
+                fenster_uneinheitlich=len({tuple(v) for v in imp.pruefung.get("fenster_je_blatt", {}).values()}) > 1,
+                etikett=("Demo-Daten" if imp.pruefung.get("synthetisch") else
+                         "Anonymisierte Echtdaten" if imp.pruefung.get("anonymisiert") else "Echtdaten"))

@@ -73,3 +73,7 @@ empfehlungen:
 referenz:
   # Toleranz für den Abgleich mit den Referenz-Outputs der Excel (relativ je Position)
   toleranz: 0.02
+
+aewelt:
+  # Werk für alle Länder, die in keinem Blatt „Länder W…“ stehen (Reiter AE Welt)
+  standard_werk: "1000"

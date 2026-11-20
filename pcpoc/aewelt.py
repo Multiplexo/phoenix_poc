@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import datetime as dt
 import re
+from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
@@ -107,11 +108,91 @@ def lesen(pfad: Path | str) -> dict:
             excel_vorhanden |= werte.map(lambda v: isinstance(v, (int, float)) and not pd.isna(v)).any()
     t["_zeile"] = (daten.index + 1).to_numpy()  # Excel-Zeilennummer
     formeln = _formeln(pfad, blatt, {k[6:]: i for k, i in sp.items() if k.startswith("excel_")}, t["_zeile"].tolist())
-    hinweis = " ".join(" ".join(map(str, xls.parse(n, header=None).fillna("").to_numpy().ravel()))
-                       for n in xls.sheet_names if n != blatt and len(xls.sheet_names) < 20)[:2000]
+    kleine = {n: xls.parse(n, header=None, nrows=60) for n in xls.sheet_names if n != blatt}
+    hinweis = " ".join(" ".join(map(str, d.fillna("").to_numpy().ravel())) for d in kleine.values())[:4000]
     return dict(tabelle=t.reset_index(drop=True), monate=[str(m) for _, m in monate], blatt=blatt,
                 synthetisch="synthetisch" in (hinweis + " " + str(pfad)).lower(), excel_vorhanden=bool(excel_vorhanden),
-                formeln=formeln)
+                formeln=formeln, werke=werke_aus_blaettern(kleine), fenster_je_blatt=fenster_je_blatt(kleine, blatt, k2),
+                stand_bericht=_stand_bericht(kleine))
+
+
+# ---------------------------------------------------------------- Werke und Blätter
+LAND_ISO = {
+    "Australia": "AU", "Austria": "AT", "Belgium": "BE", "Brazil": "BR", "Canada": "CA", "Chile": "CL", "China": "CN",
+    "Colombia": "CO", "Czech Republic": "CZ", "Denmark": "DK", "Finland": "FI", "France": "FR", "Germany": "DE",
+    "Hungary": "HU", "India": "IN", "Indonesia": "ID", "Ireland": "IE", "Israel": "IL", "Italy": "IT", "Japan": "JP",
+    "Lithuania": "LT", "Luxembourg": "LU", "Malaysia": "MY", "Mexico": "MX", "Netherlands": "NL", "New Zealand": "NZ",
+    "Norway": "NO", "Poland": "PL", "Portugal": "PT", "Romania": "RO", "Saudi Arabia": "SA", "Singapore": "SG",
+    "Slovakia": "SK", "South Africa": "ZA", "South Korea": "KR", "Spain": "ES", "Sweden": "SE", "Switzerland": "CH",
+    "Taiwan": "TW", "Thailand": "TH", "Turkey": "TR", "Ukraine": "UA", "United Arab Emirates": "AE",
+    "United Kingdom": "GB", "United States": "US", "Slovenia": "SI", "Greece": "GR", "Vietnam": "VN", "Philippines": "PH",
+    "Argentina": "AR", "Croatia": "HR", "Bulgaria": "BG", "Estonia": "EE", "Latvia": "LV", "Serbia": "RS",
+}
+DE_NAME = {"china": "CN", "dubai": "AE", "taiwan": "TW", "indonesien": "ID", "singapore": "SG", "singapur": "SG",
+           "indien": "IN", "thailand": "TH", "malaysia": "MY", "korea": "KR", "japan": "JP", "australien": "AU",
+           "neuseeland": "NZ", "usa": "US", "kanada": "CA", "mexiko": "MX"}
+ISO_LAND = {v: k for k, v in LAND_ISO.items()}
+
+
+def werke_aus_blaettern(blaetter: dict[str, pd.DataFrame]) -> dict:
+    """Blätter wie „Länder W1700“: Liste „CN (100001) China“ je Zeile -> {Werk: {gueltig_ab, laender:[ISO]}}.
+    Alle übrigen Länder gehören zum Standardwerk (Parameter aewelt.standard_werk)."""
+    out = {}
+    for name, df in blaetter.items():
+        m = re.search(r"l[äa]nder\s*w?\s*(\d{3,5})", name, re.I)
+        if not m:
+            continue
+        werk, laender, ab, stand = m.group(1), [], None, None
+        for v in df.fillna("").astype(str).to_numpy().ravel():
+            v = v.strip()
+            if not v:
+                continue
+            if re.match(r"^ab\s", v, re.I):
+                ab = _monat(v[3:].strip().replace("Februar", "Feb").replace("März", "Mär").replace("Januar", "Jan"))
+                continue
+            if v.lower().startswith("stand"):
+                stand = v[5:].strip()
+                continue
+            z = re.match(r"^([A-Z]{2})?\s*(?:[A-Z]{2,4}\s*)?\(\s*\d+\)\s*(.+)$", v)
+            if z:
+                code = z.group(1) or DE_NAME.get(z.group(2).strip().split()[0].lower())
+                if code and code not in laender:
+                    laender.append(code)
+        if laender:
+            out[werk] = dict(laender=laender, gueltig_ab=str(ab) if ab else None, stand=stand, blatt=name)
+    return out
+
+
+def werk_je_land(werke: dict, standard: str = "1000") -> dict[str, str]:
+    """Ländername (wie im Reiter) -> Werk."""
+    m = {}
+    for w, d in werke.items():
+        for c in d["laender"]:
+            if c in ISO_LAND:
+                m[ISO_LAND[c]] = w
+    return defaultdict(lambda: standard, m)
+
+
+def fenster_je_blatt(blaetter: dict[str, pd.DataFrame], blatt: str, kopf: list[str]) -> dict[str, list[str]]:
+    """Welche Durchschnitte (AE3/AE6/AE10/AE12) rechnet welches Blatt? Unterschiede sind ein Befund."""
+    def fenster(werte):
+        return sorted({x.upper() for x in map(str, werte) if re.fullmatch(r"AE\d{1,2}", str(x).strip(), re.I)},
+                      key=lambda x: int(x[2:]))
+    out = {blatt: fenster(kopf)}
+    for n, d in blaetter.items():
+        f = fenster(d.head(12).fillna("").to_numpy().ravel())
+        if f:
+            out[n] = f
+    return out
+
+
+def _stand_bericht(blaetter) -> str | None:
+    for d in blaetter.values():
+        a = d.fillna("").astype(str).to_numpy()
+        for i, j in zip(*np.where(a == "Last Refreshed")):
+            if j + 1 < a.shape[1] and a[i, j + 1]:
+                return a[i, j + 1][:10]
+    return None
 
 
 def _formeln(pfad, blatt: str, spalten: dict[str, int], zeilen: list[int]) -> dict:
@@ -143,6 +224,8 @@ def _formeln(pfad, blatt: str, spalten: dict[str, int], zeilen: list[int]) -> di
             continue
         standard = max((m for m in muster if m.startswith("=")), key=lambda m: len(muster[m]), default=None)
         out[ANZEIGE.get(k, k.upper())] = dict(standard=standard, n=len(zeilen), standard_n=len(muster.get(standard, [])),
+                              # keine einzige Formel: Datei wurde als Werte gespeichert (Export, Anonymisierung) -> kein Befund
+                              nur_werte=standard is None and bool(muster.get("(fester Wert)")),
                               fest=muster.get("(fester Wert)", [])[:50], n_fest=len(muster.get("(fester Wert)", [])),
                               leer=len(muster.get("(leer)", [])),
                               abweichend={m: zs[:10] for m, zs in muster.items() if m.startswith("=") and m != standard},
@@ -234,6 +317,8 @@ def befunde(t: pd.DataFrame, monate: list[str], stand: dt.date | None = None) ->
         ae3_effekt=(ae3 - ae3_ohne_letzten) / ae3_ohne_letzten if ae3_ohne_letzten else None,
         ae10_statt_ae12=x.shape[1] >= 10,
         mehrland_artikel=mehrland, hauptland_wechsel=wechsel,
+        negative_zellen=int((x < 0).sum()), negative_menge=float(x[x < 0].sum()),
+        monat_min=float(x.sum(axis=0).min()), monat_max=float(x.sum(axis=0).max()),
     )
 
 
@@ -257,13 +342,36 @@ def _prognose(x: np.ndarray, schnitt: int, methode: str, gewichte: dict) -> np.n
     return gew
 
 
-METHODEN = ["AE3", "AE6", "AE10", "Plattform"]
+METHODEN = ["AE3", "AE6", "AE10", "Plattform", "Null"]
+EBENEN = [("material", "Material"), ("material_werk", "Material × Werk"), ("material_land", "Material × Land"),
+          ("produkttyp", "Produkttyp"), ("werk", "Werk")]
+
+
+def _gruppen(t: pd.DataFrame, x: np.ndarray, ebene: str, werk_von) -> tuple[np.ndarray, np.ndarray]:
+    """Summiert die Zeilen (Material × Land) auf die Ebene. Rückgabe: Matrix je Gruppe, Gruppenschlüssel."""
+    if ebene == "material_land":
+        return x, (t["artikel"] + " · " + t["land"]).to_numpy()
+    if ebene == "material":
+        k = t["artikel"].to_numpy()
+    elif ebene == "material_werk":
+        k = (t["artikel"] + " · " + t["land"].map(werk_von)).to_numpy()
+    elif ebene == "produkttyp":
+        k = t["produkttyp"].replace("", "?").to_numpy()
+    else:
+        k = t["land"].map(werk_von).to_numpy()
+    codes, inv = np.unique(k, return_inverse=True)
+    g = np.zeros((len(codes), x.shape[1]))
+    np.add.at(g, inv, x)
+    return g, codes
 
 
 def rueckrechnung(t: pd.DataFrame, monate: list[str], gewichte: dict, versatz: int = 3, ziele: int = 6,
-                  ohne_letzten: bool = False) -> dict:
+                  ohne_letzten: bool = False, werke: dict | None = None, standard_werk: str = "1000") -> dict:
     """Für die letzten `ziele` Monate: Was hätte jede Methode `versatz` Monate vorher vorhergesagt?
-    Bewertet je Material × Land und je Material (Summe der Länder), WMAPE = Σ|F − Ist| / Σ Ist."""
+
+    Abweichung (WMAPE) = Σ|Prognose − Ist| / Σ Ist, Tendenz (Bias) = Σ(Prognose − Ist) / Σ Ist.
+    Die Nullprognose ist der Prüfstein: Eine Methode, die nicht besser ist als „jeden Monat null“, sagt auf dieser
+    Ebene nichts voraus. Die Tendenz steht immer daneben, weil die Abweichung zu niedrige Prognosen belohnt."""
     x = matrix(t, monate)
     if ohne_letzten:
         x, monate = x[:, :-1], monate[:-1]
@@ -271,29 +379,46 @@ def rueckrechnung(t: pd.DataFrame, monate: list[str], gewichte: dict, versatz: i
     ziele = min(ziele, n - versatz - 3)
     if ziele < 1:
         return dict(n=0)
-    art = t["artikel"].to_numpy()
-    codes, inv = np.unique(art, return_inverse=True)
-
-    def je_artikel(m):
-        out = np.zeros((len(codes),) + m.shape[1:])
-        np.add.at(out, inv, m)
-        return out
-
-    erg = {m: dict(zeile=[0.0, 0.0], artikel=[0.0, 0.0], verlauf=[]) for m in METHODEN}
-    for j in range(n - ziele, n):
-        ist = x[:, j]
+    werk_von = werk_je_land(werke or {}, standard_werk)
+    js = list(range(n - ziele, n))
+    ebenen = []
+    for key, name in EBENEN:
+        g, codes = _gruppen(t, x, key, werk_von)
+        erg = {}
         for m in METHODEN:
-            f = _prognose(x, j - versatz + 1, m, gewichte)
-            e = erg[m]
-            e["zeile"][0] += float(np.abs(f - ist).sum()); e["zeile"][1] += float(ist.sum())
-            fa, ia = je_artikel(f), je_artikel(ist)
-            e["artikel"][0] += float(np.abs(fa - ia).sum()); e["artikel"][1] += float(ia.sum())
-            e["verlauf"].append(float(np.abs(f - ist).sum() / ist.sum()) if ist.sum() else None)
-    tab = [dict(methode=m, wmape_zeile=e["zeile"][0] / e["zeile"][1] if e["zeile"][1] else None,
-                wmape_artikel=e["artikel"][0] / e["artikel"][1] if e["artikel"][1] else None,
-                fehler_artikel=e["artikel"][0], verlauf=e["verlauf"]) for m, e in erg.items()]
+            e = b = s_ = 0.0
+            verlauf, fehler = [], np.zeros(len(g))
+            for j in js:
+                f = np.zeros(len(g)) if m == "Null" else _prognose(g, j - versatz + 1, m, gewichte)
+                ist = g[:, j]
+                d = f - ist
+                e += float(np.abs(d).sum()); b += float(d.sum()); s_ += float(ist.sum())
+                fehler += np.abs(d)
+                verlauf.append(float(np.abs(d).sum() / ist.sum()) if ist.sum() else None)
+            erg[m] = dict(wmape=e / s_ if s_ else None, bias=b / s_ if s_ else None, fehler=e, verlauf=verlauf,
+                          _je_gruppe=fehler)
+        ebenen.append(dict(ebene=key, name=name, gruppen=len(g), methoden=erg, _codes=codes))
+    mat = ebenen[0]
+    tab = [dict(methode=m, wmape_artikel=mat["methoden"][m]["wmape"], bias_artikel=mat["methoden"][m]["bias"],
+                wmape_zeile=next(e for e in ebenen if e["ebene"] == "material_land")["methoden"][m]["wmape"],
+                fehler_artikel=mat["methoden"][m]["fehler"], verlauf=mat["methoden"][m]["verlauf"])
+           for m in METHODEN if m != "Null"]
     beste_excel = min((z for z in tab if z["methode"] != "Plattform"), key=lambda z: z["wmape_artikel"] or 9)
     pl = next(z for z in tab if z["methode"] == "Plattform")
-    return dict(n=ziele, versatz=versatz, monate=monate[n - ziele:], methoden=tab, beste_excel=beste_excel["methode"],
+    # Fehlerkonzentration (Material, Methode AE6 als heutige Rechnung)
+    fe = mat["methoden"]["AE6"]["_je_gruppe"]
+    o = np.argsort(-fe)
+    ges = float(fe.sum()) or 1.0
+    konz = dict(top20=float(fe[o[:20]].sum() / ges), top50=float(fe[o[:50]].sum() / ges),
+                top10pct=float(fe[o[:max(1, len(fe) // 10)]].sum() / ges), materialien=len(fe),
+                liste=[dict(artikel=str(mat["_codes"][i]), fehler=float(fe[i]), anteil=float(fe[i] / ges)) for i in o[:15]])
+    for e in ebenen:
+        e.pop("_codes")
+        for v in e["methoden"].values():
+            v.pop("_je_gruppe")
+    return dict(n=ziele, versatz=versatz, monate=monate[n - ziele:], methoden=tab, ebenen=ebenen, konzentration=konz,
+                beste_excel=beste_excel["methode"],
                 verbesserung=(beste_excel["wmape_artikel"] - pl["wmape_artikel"]) if pl["wmape_artikel"] is not None else None,
-                fehler_weniger=beste_excel["fehler_artikel"] - pl["fehler_artikel"])
+                fehler_weniger=beste_excel["fehler_artikel"] - pl["fehler_artikel"],
+                null_material=mat["methoden"]["Null"]["wmape"], ae6_material=mat["methoden"]["AE6"]["wmape"],
+                ae6_werk=next(e for e in ebenen if e["ebene"] == "werk")["methoden"]["AE6"]["wmape"])

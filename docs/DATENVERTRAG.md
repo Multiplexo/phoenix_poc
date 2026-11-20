@@ -88,4 +88,6 @@ Excel unverändert hochladen (Verwaltung → Import, Art „AE Welt_Land alle“
 - **Monate als Spalten:** „Jun 2025“ … (auch deutsch „Mär 2026“, `YYYY-MM` oder Datumszellen); leere Zellen zählen als 0
 - **Auswertung der Excel:** AE6, AE3, Veränderung AE3 zu AE6, Faktor für Prognose, AE10
 
+Ein Blatt „Länder W1700“ (Einträge wie `CN (100001) China`, Zeile „ab Februar 2026“) wird als Werkszuordnung gelesen; alle übrigen Länder gehören zum Standardwerk (`aewelt.standard_werk`, 1000). Auf Wunsch wird daraus eine Matrix-Version. Der Datenstand kommt aus „Last Refreshed“ im SAP-Bericht, sonst aus dem Formular.
+
 Die Plattform liest Formeln und gespeicherte Ergebnisse, rechnet je Zeile nach und meldet überschriebene oder abweichende Formeln. „Stand des Exports“ bestimmt, ob der letzte Monat noch läuft. Der Import verändert keine Forecasts. Siehe `docs/DATENBLATT_ECHTDATEN.md`.

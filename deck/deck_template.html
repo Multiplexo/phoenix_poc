@@ -182,7 +182,7 @@ function body(f){
 }
 
 stage.innerHTML = SPEC.folien.map((f, i) =>
-  `<section class="slide ${f.typ}" aria-label="Folie ${i+1}"><div class="glow"></div>${chrome(f, i)}${f.demo ? `<div class="demo">Demo-Daten</div>` : ""}${body(f)}</section>`).join("");
+  `<section class="slide ${f.typ}" aria-label="Folie ${i+1}"><div class="glow"></div>${chrome(f, i)}${f.demo || f.etikett ? `<div class="demo">${esc(f.etikett || "Demo-Daten")}</div>` : ""}${body(f)}</section>`).join("");
 const slides = [...document.querySelectorAll(".slide")];
 let cur = 0;
 try { const h = parseInt(location.hash.slice(1)); if (h >= 1 && h <= N) cur = h - 1; } catch(e) {}

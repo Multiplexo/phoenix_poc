@@ -74,6 +74,34 @@ class AEWeltKernTest(TestCase):
         konstant = pae.rueckrechnung(d["tabelle"].iloc[[0]], d["monate"], {"ae3": .5, "ae6": .3, "ae12": .2}, versatz=3)
         self.assertTrue(all(m["wmape_artikel"] == 0 for m in konstant["methoden"]))  # konstante Reihe: jede Methode exakt
 
+    def test_werke_ebenen_und_nur_werte(self):
+        import pandas as pd
+        blatt = pd.DataFrame([["Stand 07.03.2025"], [None], ["ab Februar 2026"], ["(100001) China"], ["US (100002) USA"],
+                              ["AE (100003) Dubai"], ["JP (100004) Japan"]])
+        w = pae.werke_aus_blaettern({"Länder W1700": blatt})
+        self.assertEqual(w["1700"]["laender"], ["CN", "US", "AE", "JP"])
+        self.assertEqual(w["1700"]["gueltig_ab"], "2026-02")
+        self.assertEqual(pae.werk_je_land(w)["Japan"], "1700")
+        self.assertEqual(pae.werk_je_land(w)["Germany"], "1000")
+        d = self._lesen(probe())
+        r = pae.rueckrechnung(d["tabelle"], d["monate"], {"ae3": .5, "ae6": .3, "ae12": .2}, versatz=3, werke=w)
+        namen = [e["ebene"] for e in r["ebenen"]]
+        self.assertEqual(namen, ["material", "material_werk", "material_land", "produkttyp", "werk"])
+        for e in r["ebenen"]:
+            self.assertAlmostEqual(e["methoden"]["Null"]["bias"], -1.0)       # Nullprognose: immer 100 % zu niedrig
+        self.assertAlmostEqual(sum(x["anteil"] for x in r["konzentration"]["liste"]), 1.0)  # 3 Materialien, alle gelistet
+        # Datei nur mit Werten (z. B. nach Anonymisierung): kein Befund „fester Wert“
+        wb = openpyxl.load_workbook(io.BytesIO(probe()))
+        ws = wb.active
+        for row in ws.iter_rows(min_row=3, min_col=23, max_col=27):
+            for c in row:
+                c.value = 1.5
+        b = io.BytesIO()
+        wb.save(b)
+        f = self._lesen(b.getvalue())
+        self.assertTrue(all(v["nur_werte"] for v in f["formeln"].values()))
+        self.assertTrue(f["excel_vorhanden"])
+
     def test_falscher_reiter(self):
         wb = openpyxl.Workbook()
         wb.active.title = "Etwas anderes"

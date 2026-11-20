@@ -31,3 +31,7 @@
 4. **#DIV/0!:** Wie werden Zeilen mit AE6 = 0 heute behandelt (manuell, ignoriert, Nullprognose)?
 5. **Nur 3rd party:** Intercompany-Aufträge sind nicht enthalten. Werden sie getrennt geplant oder über die Werke abgebildet?
 6. **Land → Werk:** Welche Matrix-Version gilt für die Länderzuordnung im betrachteten Zeitraum?
+7. **Fenster je Blatt:** Die Blätter der Arbeitsmappe rechnen teils AE10, teils AE12 (mit „Summe AE 12 Mon“). Welches Blatt ist führend?
+8. **Stornos:** Negative Monatswerte (Stornos) gehen heute in die Durchschnitte ein. Gewollt, oder sollen sie dem Ursprungsmonat zugeordnet werden?
+9. **Werkszuordnung vor Februar 2026:** Die Länderliste für Werk 1700 gilt ab Februar 2026. Welche Zuordnung galt davor?
+10. **Planungsebene:** Auf Materialebene sind die Monatsaufträge mit Durchschnitten kaum vorhersagbar, auf Werks- und Produkttypebene gut. Auf welcher Ebene wird bestellt und disponiert, und wo wird heute manuell korrigiert?

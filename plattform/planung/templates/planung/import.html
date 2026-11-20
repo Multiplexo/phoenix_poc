@@ -11,6 +11,7 @@
     <div class="formrow"><label>Datei<input type="file" name="datei" accept=".csv,.xlsx,.xls,.xml" required></label></div>
     <div class="formrow"><label style="flex-direction:row;gap:6px"><input type="checkbox" name="loop" value="1" checked> nach DTO-Import: Soll-Ist abgleichen, Abweichungen prüfen, betroffene Artikel neu rechnen</label></div>
     <div class="formrow"><label style="flex-direction:row;gap:6px"><input type="checkbox" name="lauf" value="1"> zusätzlich Forecast-Lauf für alle Artikel (Monatslauf)</label></div>
+    <div class="formrow"><label style="flex-direction:row;gap:6px"><input type="checkbox" name="matrix_uebernehmen" value="1"> nur AE Welt: Länderzuordnung „Länder W…“ als neue Matrix-Version übernehmen (wirkt auf alle folgenden Forecast-Läufe)</label></div>
     <div class="formrow"><label>Bezeichnung (nur Matrix, z. B. Q1/2027)<input name="bezeichnung" size="12"></label></div>
     <button class="p">Importieren</button>
   </form>
