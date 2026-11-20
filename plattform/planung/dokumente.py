@@ -195,7 +195,7 @@ def extrahiere_ki(doc: Dokument) -> list[dict]:
         return extrahiere_langdock(doc)
     import anthropic
 
-    client = anthropic.Anthropic()
+    client = anthropic.Anthropic(timeout=float(os.environ.get("KI_TIMEOUT", "180")), max_retries=1)
     resp = client.beta.messages.create(
         model=MODELL,
         max_tokens=16000,
@@ -220,7 +220,8 @@ def extrahiere_langdock(doc: Dokument) -> list[dict]:
     import anthropic
 
     client = anthropic.Anthropic(api_key=None, auth_token=os.environ["LANGDOCK_API_KEY"],
-                                 base_url=os.environ.get("LANGDOCK_BASE_URL", "https://api.langdock.com/anthropic/eu"))
+                                 base_url=os.environ.get("LANGDOCK_BASE_URL", "https://api.langdock.com/anthropic/eu"),
+                                 timeout=float(os.environ.get("KI_TIMEOUT", "180")), max_retries=1)
     format_hinweis = ("Antworte ausschließlich mit einem JSON-Objekt nach diesem Schema, ohne weiteren Text:\n"
                       + json.dumps(SCHEMA, ensure_ascii=False))
     resp = client.messages.create(

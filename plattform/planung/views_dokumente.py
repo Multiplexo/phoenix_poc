@@ -17,7 +17,9 @@ from .models import AccuracyWert, Artikel, ArtikelForecast, Dokument, Ereignis, 
 
 def _ki_status():
     import os
-    return dict(anbieter=dokumente.ki_anbieter(), modell=dokumente.ki_modell() if dokumente.ki_verfuegbar() else None,
+    from .models import Protokoll
+    test = Protokoll.objects.filter(objekt="KI-Selbsttest").first()
+    return dict(anbieter=dokumente.ki_anbieter(), modell=dokumente.ki_modell() if dokumente.ki_verfuegbar() else None, test=test,
                 mails=dokumente.mails_erlaubt(), langdock_url=os.environ.get("LANGDOCK_BASE_URL", "https://api.langdock.com/anthropic/eu"))
 
 
