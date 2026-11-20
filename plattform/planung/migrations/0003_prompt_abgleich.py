@@ -7,8 +7,9 @@ def status_uebernehmen(apps, schema_editor):
     """Bestehende Positionen erben den Status ihres Artikel-Forecasts."""
     AF = apps.get_model('planung', 'ArtikelForecast')
     FZ = apps.get_model('planung', 'ForecastZeile')
-    for st in AF.objects.values_list('status', flat=True).distinct():
-        FZ.objects.filter(af__status=st).update(status=st)
+    from django.db.models import OuterRef, Subquery
+    # eine Anweisung statt einer je Status (Meta.ordering machte distinct() wirkungslos -> tausende UPDATEs)
+    FZ.objects.update(status=Subquery(AF.objects.filter(pk=OuterRef('af_id')).order_by().values('status')[:1]))
 
 
 

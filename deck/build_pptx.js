@@ -108,7 +108,7 @@ const render = {
     f.werte.forEach((v, i) => {
       const x = X0 + i * (w + gap);
       card(s, x, Y_BODY, w, h, v.hervorheben, `Kennzahl ${i + 1}`);
-      s.addText(v.wert, { x: x + 0.3, y: Y_BODY + 0.28, w: w - 0.6, h: 0.8, fontFace: THEME.headFontFace, fontSize: 38,
+      s.addText(v.wert, { x: x + 0.3, y: Y_BODY + 0.28, w: w - 0.6, h: 0.8, fontFace: THEME.headFontFace, fontSize: String(v.wert).length > 11 ? 24 : String(v.wert).length > 7 ? 30 : 38,
         color: v.hervorheben ? C.accent1 : C.background1, margin: 0, valign: "middle", fit: "shrink", isTextBox: true, objectName: `Wert ${i + 1}` });
       s.addText([{ text: v.label, options: { bold: true, color: C.background1, breakLine: true } }, { text: v.hinweis || "", options: { color: C.background2 } }],
         { x: x + 0.3, y: Y_BODY + 1.18, w: w - 0.6, h: 0.8, fontSize: 13, margin: 0, valign: "top", paraSpaceAfter: 2, isTextBox: true, objectName: `Label ${i + 1}` });

@@ -37,7 +37,7 @@ def _n(x, einheit=""):
 
 
 def _mio(x):
-    return "–" if x is None else (f"{x / 1e6:,.1f}".replace(",", "X").replace(".", ",").replace("X", ".") + " Mio. €")
+    return "–" if x is None else (f"{x / 1e6:,.1f}".replace(",", "X").replace(".", ",").replace("X", ".") + " Mio.\u00a0€")
 
 
 CLUSTER = {"standard": "Standard", "hyperscaler": "Hyperscaler", "ramp_up": "Ramp-Up", "ramp_down": "Ramp-Down", "intermittent": "Sporadisch"}

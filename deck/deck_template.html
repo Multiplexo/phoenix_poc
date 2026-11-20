@@ -53,6 +53,7 @@ h1 .z2.gold{color:var(--gold)} h1 .z2.cyan{color:var(--cyan)}
 .num{width:64px;height:64px;border-radius:50%;border:2.5px solid var(--cyan);display:grid;place-items:center;font-weight:800;font-size:22px;color:var(--cyan);margin-bottom:22px}
 .card.hi .num{background:var(--gold);border-color:var(--gold);color:var(--navy)}
 .stat .v{font-size:80px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.stat .v.lang{font-size:56px}.stat .v.sehrlang{font-size:44px}
 .stat.hi .v{color:var(--cyan)}
 .stat .l{font-size:22px;font-weight:700;margin-top:18px}
 .stat .h{font-size:19px;color:var(--grau);margin-top:6px}
@@ -156,7 +157,7 @@ function body(f){
       <div class="content" style="top:330px;right:760px">${head(f)}<div class="lead">${esc(f.text)}</div><div class="kontakt">${esc(f.kontakt)}</div></div>`;
     case "kennzahlen": return `<div class="content">${head(f)}
       <div class="grid" style="grid-template-columns:repeat(${f.werte.length},1fr)">${f.werte.map(w =>
-        `<div class="card stat ${w.hervorheben?"hi":""}"><div class="v">${esc(w.wert)}</div><div class="l">${esc(w.label)}</div><div class="h">${esc(w.hinweis)}</div></div>`).join("")}</div>
+        `<div class="card stat ${w.hervorheben?"hi":""}"><div class="v ${String(w.wert).length > 11 ? "sehrlang" : String(w.wert).length > 7 ? "lang" : ""}">${esc(w.wert)}</div><div class="l">${esc(w.label)}</div><div class="h">${esc(w.hinweis)}</div></div>`).join("")}</div>
       ${f.text ? `<div class="lead">${esc(f.text)}</div>` : ""}</div>`;
     case "karten": return `<div class="content">${head(f)}
       <div class="grid" style="grid-template-columns:repeat(${f.karten.length},1fr)">${f.karten.map((k,i) =>
