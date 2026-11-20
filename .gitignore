@@ -11,3 +11,6 @@ node_modules/
 plattform/db.sqlite3
 plattform/staticfiles/
 plattform/published/
+tests/referenz/*
+!tests/referenz/.gitkeep
+plattform/media/

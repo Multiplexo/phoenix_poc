@@ -11,6 +11,22 @@ SAP IBP bleibt das führende System; die Plattform ist die Brücke bis dahin und
 > **Was wir von Phoenix brauchen:** [`docs/ANFORDERUNGSLISTE.md`](docs/ANFORDERUNGSLISTE.md) (auch als Excel zum Nachhalten).
 > Abgleich Angebot ↔ Briefing: [`docs/CHALLENGE.md`](docs/CHALLENGE.md).
 
+## Datenfluss
+
+```
+Upload (DTO, Matrix, Bestand, Artikel, Historie)  ──►  Prüfung (unbekannte Artikel/Länder, negative Mengen)  ──►  Datenbank
+      │ Rohdatei über Speicher-Schnittstelle                                                                          │
+      ▼                                                                                                                ▼
+Forecast-Lauf (pcpoc/generator.py, ohne Django)  ──►  Positionen je Artikel × Standort × Monat (Brutto, Netto, Status, Flags)
+      ▲                                                                                                                │
+      │ Neuberechnung                                                                                    Review / Freigabe (Feature-Flag)
+      │                                                                                                                ▼
+Loop nach jedem DTO-Import: Ist je Artikel und Standort ◄── freigegebener Stand mit Zeitversatz ──► MAPE / WMAPE / Bias (gespeichert)
+      └── Hinweis nur über der Schwelle (Parameter mit „gültig ab“)
+```
+
+Offene fachliche Punkte und ihre Startwerte: [`docs/offene_punkte.md`](docs/offene_punkte.md).
+
 ## Plattform starten
 
 ```bash
@@ -20,8 +36,11 @@ export DJANGO_DEBUG=1                 # lokal ohne Passwort
 python manage.py migrate
 python manage.py demo_laden           # synthetische Daten, spielt Import → Lauf → Freigabe → Loop einmal durch
 python manage.py runserver            # http://127.0.0.1:8000
-python manage.py test planung         # Plattform-Tests
+python manage.py test planung         # Plattform-Tests (Demo, Freigabe, Dokumente, Prompt-Akzeptanz, Edge Cases)
+cd .. && python -m pytest -q          # Rechenkern-Tests; Referenz-Tests laufen, sobald tests/referenz/ befüllt ist
 ```
+
+**Betrieb:** Render (Docker), Postgres für alle Forecast-Stände, Freigaben und Accuracy-Historie; Einstellungen über Umgebungsvariablen ([`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)). Schnittstellen: `POST /api/v1/import/<art>`, `GET /api/v1/forecast`, `GET /api/v1/accuracy` (Basic Auth).
 
 ## Voranalyse (Angebotsleistungen)
 

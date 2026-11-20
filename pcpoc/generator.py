@@ -110,6 +110,9 @@ def generate(actuals: pd.DataFrame, articles: pd.DataFrame, dto: pd.DataFrame, m
         cluster = ov.cluster_artikel.get(a) or str(arts.loc[a, "cluster"] or "unbekannt")
         methode = cl_cfg.get(cluster, cl_cfg.get("unbekannt", {"methode": "gewichtet"}))
         stat, erkl = cluster_level(series, cutoff, methode, params, horizon)
+        if (stat < 0).any():  # Retouren/Korrekturen können den Durchschnitt negativ machen; Bedarf ist nie negativ
+            stat = np.clip(stat, 0, None)
+            erkl += "; negative Fortschreibung auf 0 begrenzt"
         if a in ov.korrektur:
             fac, n_m, why = ov.korrektur[a]
             stat = stat.copy()

@@ -20,6 +20,8 @@ urlpatterns = [
     path("werke/<str:standort>.<str:fmt>", views.werke_export, name="werke_export"),
     path("protokoll/", views.protokoll, name="protokoll"),
     path("api/v1/import/<str:art>", views.api_import, name="api_import"),
+    path("api/v1/forecast", views.api_forecast, name="api_forecast"),
+    path("api/v1/accuracy", views.api_accuracy, name="api_accuracy"),
     path("healthz", views.healthz),
     path("favicon.ico", views.favicon),
     re_path(r"^bericht/(?P<pfad>.*)$", views.bericht, name="bericht"),

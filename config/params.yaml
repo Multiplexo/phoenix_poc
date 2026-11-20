@@ -69,3 +69,7 @@ empfehlungen:
   # Gesamtfaktor wird auf diesen Bereich begrenzt
   faktor_min: 0.4
   faktor_max: 2.5
+
+referenz:
+  # Toleranz für den Abgleich mit den Referenz-Outputs der Excel (relativ je Position)
+  toleranz: 0.02

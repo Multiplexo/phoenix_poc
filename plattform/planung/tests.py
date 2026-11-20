@@ -22,7 +22,7 @@ class DemoTest(TestCase):
             self.assertIn(s, st)
 
     def test_netting_brutto_netto(self):
-        for z in ForecastZeile.objects.exclude(standort="")[:500]:
+        for z in ForecastZeile.objects.exclude(standort="").exclude(af__lauf__anlass="historie")[:500]:
             self.assertAlmostEqual(z.brutto, z.stat + z.wachstum + z.projekt, places=4)
             self.assertAlmostEqual(z.netto, z.brutto - z.abzug_bestand, places=4)
             self.assertGreaterEqual(z.netto, -1e-9)

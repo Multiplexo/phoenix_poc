@@ -99,7 +99,7 @@ def akte(request, nummer):
     """Produkt-Akte: je Monat Ist, Forecast (mit WBZ-Versatz), Abweichung, Ereignisse und Dokumente."""
     a = get_object_or_404(Artikel, nummer=nummer)
     act = services.actuals_df()
-    acc = {v.monat: v for v in AccuracyWert.objects.filter(artikel=nummer)}
+    acc = {v.monat: v for v in AccuracyWert.objects.filter(standort="", artikel=nummer)}
     evs = list(Ereignis.objects.filter(artikel=nummer).select_related("dokument"))
     sigs = list(Signal.objects.filter(artikel=nummer))
     monate = []

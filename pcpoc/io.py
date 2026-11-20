@@ -123,7 +123,11 @@ def load_forecasts(path) -> pd.DataFrame:
         df["stat_qty"] = float("nan")
     if "final_qty" not in df.columns:
         df["final_qty"] = df["stat_qty"]
-    return df[["snapshot", "article", "target", "stat_qty", "final_qty"]]
+    cols = ["snapshot", "article", "target", "stat_qty", "final_qty"]
+    if "site" in df.columns:  # optional: Historie je Standort
+        df["site"] = df["site"].fillna("").astype(str)
+        cols.append("site")
+    return df[cols]
 
 
 def load_knowledge(path) -> list[dict]:

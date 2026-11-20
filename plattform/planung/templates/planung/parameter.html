@@ -21,6 +21,15 @@
   {% empty %}<tr><td colspan="5" class="muted">Keine. Erfassen in der Artikelansicht.</td></tr>{% endfor %}</table>
 </div>
 </div>
+<div class="panel"><h2>Schwellen und Rechenparameter</h2>
+  <p class="note">Werte gelten ab dem angegebenen Datum; frühere Werte bleiben als Historie erhalten. Startwerte stammen aus config/params.yaml.</p>
+  <table><tr><th>Parameter</th><th>Aktuell</th><th>Neuer Wert</th><th>Historie</th></tr>
+  {% for e in einstellbar %}<tr><td><b>{{ e.label }}</b><br><span class="muted">{{ e.schluessel }}{% if e.hinweis %} · {{ e.hinweis }}{% endif %}</span></td>
+    <td>{% if e.typ == 'anteil' %}{{ e.wert|pct }}{% else %}{{ e.wert }}{% endif %}</td>
+    <td><form method="post" class="formrow" style="margin:0">{% csrf_token %}<input type="hidden" name="aktion" value="param_setzen"><input type="hidden" name="schluessel" value="{{ e.schluessel }}">
+      <input name="wert" size="6" required placeholder="{% if e.typ == 'anteil' %}%{% endif %}"><input type="date" name="ab" value="{{ heute|date:'Y-m-d' }}"><input name="notiz" size="12" placeholder="Notiz"><button>Setzen</button></form></td>
+    <td class="muted">{% for h in e.historie %}{{ h.wert }} ab {{ h.gueltig_ab|date:"d.m.y" }} ({{ h.von }})<br>{% empty %}–{% endfor %}</td></tr>{% endfor %}</table>
+</div>
 <div class="grid2">
 <div class="panel"><h2>Feature-Flags</h2>
   <dl class="kv"><dt>Freigabe-Workflow</dt><dd>{% if features.freigabe %}an{% else %}aus (Forecasts gelten sofort als freigegeben){% endif %}</dd>
@@ -28,6 +37,6 @@
     <dt>Rollen</dt><dd>{% if features.rollen %}an · Stufe 1: {{ stufe1|join:", "|default:"–" }} · Stufe 2: {{ stufe2|join:", "|default:"–" }}{% else %}aus (alle Angemeldeten dürfen freigeben){% endif %}</dd></dl>
   <p class="note">Gesetzt über Umgebungsvariablen FEATURE_FREIGABE, FEATURE_ZWEITE_STUFE, FEATURE_ROLLEN, FREIGABE_STUFE1/2 (Render → Environment).</p>
 </div>
-<div class="panel"><h2>Rechenparameter (config/params.yaml)</h2><pre>{{ params_text }}</pre></div>
+<div class="panel"><h2>Alle Rechenparameter (wirksam)</h2><pre>{{ params_text }}</pre></div>
 </div>
 {% endblock %}

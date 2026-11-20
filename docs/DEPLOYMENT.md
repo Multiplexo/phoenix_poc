@@ -35,6 +35,7 @@ Ein Web Service (Docker) im Workspace „Multiplexo GmbH“, Region Frankfurt, d
 | `KI_ANBIETER` | nein | `langdock` oder `anthropic` erzwingen; ohne Angabe: Langdock, wenn dessen Schlüssel gesetzt ist |
 | `KI_EXTRAKTION` | nein | `aus` schaltet die KI ab (Regel-Fallback, nur für Demos) |
 | `DOKUMENTE_MAILS_ERLAUBT` | nein | `1` erlaubt den Upload von E-Mails (.eml); erst nach Freigabe durch Datenschutz und Betriebsrat |
+| `MEDIA_ROOT` | nein | Ablageort für hochgeladene Rohdateien (Standard: im Container, geht beim Redeploy verloren). Für S3 o. ä. `STORAGES["default"]` in `settings.py` umstellen. |
 | `SEED_DEMO` | nein | `1`: bei leerer Datenbank synthetische Demo-Daten laden |
 
 ## Echte Daten

@@ -28,7 +28,7 @@
 </div>
 <div class="panel"><h2>Letzte Importe</h2>
   <table><tr><th>Am</th><th>Art</th><th>Quelle</th><th>Datei</th><th>Stand</th><th class="n">Zeilen</th><th>Von</th><th>Meldungen</th></tr>
-  {% for i in laeufe %}<tr><td>{{ i.am|date:"d.m.Y H:i" }}</td><td>{{ i.get_art_display }}</td><td>{{ i.quelle }}</td><td>{{ i.dateiname }}</td><td>{{ i.stand|date:"d.m.Y" }}</td><td class="n">{{ i.zeilen }}</td><td>{{ i.von }}</td><td class="muted">{{ i.meldungen|linebreaksbr }}</td></tr>
+  {% for i in laeufe %}<tr><td>{{ i.am|date:"d.m.Y H:i" }}</td><td>{{ i.get_art_display }}</td><td>{{ i.quelle }}</td><td>{{ i.dateiname }}</td><td>{{ i.stand|date:"d.m.Y" }}</td><td class="n">{{ i.zeilen }}</td><td>{{ i.von }}</td><td class="muted">{{ i.meldungen|linebreaksbr }}{% if i.ablage %}<br>Rohdatei abgelegt{% endif %}</td></tr>
   {% empty %}<tr><td colspan="8" class="muted">Noch keine Importe.</td></tr>{% endfor %}</table>
 </div>
 {% endblock %}

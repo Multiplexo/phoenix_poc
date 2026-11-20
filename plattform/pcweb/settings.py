@@ -74,7 +74,10 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 # Vorab gerechneter Bericht und Präsentationen (Docker-Build) liegen hier und werden unter /bericht/ ausgeliefert
 PUBLISHED_DIR = Path(os.environ.get("PUBLISHED_DIR", BASE_DIR / "published"))
-STORAGES = {"staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"}}
+MEDIA_ROOT = Path(os.environ.get("MEDIA_ROOT", BASE_DIR / "media"))
+# Rohdateien über eine austauschbare Schnittstelle: heute Dateisystem, später z. B. S3 (nur diese Zeile ändern)
+STORAGES = {"default": {"BACKEND": "django.core.files.storage.FileSystemStorage", "OPTIONS": {"location": str(MEDIA_ROOT)}},
+            "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"}}
 DATA_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024
 FILE_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024
 

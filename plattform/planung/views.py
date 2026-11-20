@@ -52,7 +52,7 @@ def uebersicht(request):
             .order_by("lauf__erstellt_am", "id"):
         latest[af.artikel] = af
     acc = defaultdict(list)
-    for v in AccuracyWert.objects.all().values("artikel", "forecast", "ist", "monat"):
+    for v in AccuracyWert.objects.filter(standort="").values("artikel", "forecast", "ist", "monat"):
         acc[v["artikel"]].append(v)
     sm = services.stichtag_monat()
     standorte = defaultdict(set)
@@ -80,7 +80,7 @@ def uebersicht(request):
     zaehler = defaultdict(int)
     for s in status.values():
         zaehler[s] += 1
-    k = services.kennzahlen(AccuracyWert.objects.filter(monat__gte=services.monat(sm - 12)) if sm else AccuracyWert.objects.none())
+    k = services.kennzahlen(AccuracyWert.objects.filter(standort="", monat__gte=services.monat(sm - 12)) if sm else AccuracyWert.objects.none())
     sites = sorted({s for v in standorte.values() for s in v if s})
     return render(request, "planung/uebersicht.html", dict(
         rows=rows, zaehler=[(s, zaehler.get(s, 0), STATUS_KLASSE[s]) for s in STATUS_REIHE if zaehler.get(s)],
@@ -106,14 +106,16 @@ def artikel_detail(request, nummer):
                 monate.append(z.monat)
         for site, zs in tabelle.items():
             summen[site] = dict(stat=sum(z.stat for z in zs), wachstum=sum(z.wachstum for z in zs), projekt=sum(z.projekt for z in zs),
-                                brutto=sum(z.brutto for z in zs), abzug=sum(z.abzug_bestand for z in zs), netto=sum(z.netto for z in zs))
+                                brutto=sum(z.brutto for z in zs), abzug=sum(z.abzug_bestand for z in zs), netto=sum(z.netto for z in zs),
+                                status=sorted({z.get_status_display() for z in zs}), status_roh=sorted({z.status for z in zs}),
+                                flags=sorted({k for z in zs for k, v in (z.flags or {}).items() if v and k != "vorlaeufig"}))
     # Verlauf für das Diagramm
     act = services.actuals_df()
     hist = []
     if not act.empty and nummer in act.index:
         s = act.loc[nummer]
         hist = [(str(m), float(v)) for m, v in s.iloc[-24:].items()]
-    acc = {str(v.monat)[:7]: v for v in AccuracyWert.objects.filter(artikel=nummer)}
+    acc = {str(v.monat)[:7]: v for v in AccuracyWert.objects.filter(standort="", artikel=nummer)}
     fwd_b, fwd_n = defaultdict(float), defaultdict(float)
     if vs:
         for z in vs.zeilen.all():
@@ -133,7 +135,7 @@ def artikel_detail(request, nummer):
         dict(name="Vorschlag Netto", farbe="emp", gestrichelt=True, werte=[fwd_n.get(m) for m in lbl]),
     ])
     chart["series"] = [s for s in chart["series"] if s]
-    k = services.kennzahlen(AccuracyWert.objects.filter(artikel=nummer, monat__gte=services.monat(sm - 12)) if sm else AccuracyWert.objects.none())
+    k = services.kennzahlen(AccuracyWert.objects.filter(standort="", artikel=nummer, monat__gte=services.monat(sm - 12)) if sm else AccuracyWert.objects.none())
     signale = Signal.objects.filter(artikel=nummer).order_by("-offen", "-erstellt_am")[:12]
     offene_ausreisser = []
     for s in Signal.objects.filter(artikel=nummer, art="ausreisser", offen=True):
@@ -162,14 +164,19 @@ def _freigabe_moeglich(request, af):
     return dict(einreichen=af.status == "berechnet" and f["freigabe"],
                 freigeben=(af.status == "warte_freigabe" and services.darf_freigeben(u, 1))
                 or (af.status == "freigegeben_1" and services.darf_freigeben(u, 2) and u != af.freigabe1_von),
-                ablehnen=af.status in services.OFFEN and f["freigabe"])
+                ablehnen=af.status in services.OFFEN and f["freigabe"],
+                standort=af.status == "warte_freigabe" and not f["zweite_stufe"] and services.darf_freigeben(u, 1))
 
 
 def _detail_post(request, a):
     u = request.planer
     act = request.POST.get("aktion")
     try:
-        if act in ("einreichen", "freigeben", "ablehnen"):
+        if act in ("standort_freigeben", "standort_ablehnen"):
+            af = get_object_or_404(ArtikelForecast, id=request.POST["af"], artikel=a.nummer)
+            services.freigabe_standort(af, request.POST["standort"], act.split("_")[1], u, request.POST.get("kommentar", "").strip())
+            messages.success(request, f"Standort {request.POST['standort']}: {'freigegeben' if act.endswith('freigeben') else 'abgelehnt'}.")
+        elif act in ("einreichen", "freigeben", "ablehnen"):
             af = get_object_or_404(ArtikelForecast, id=request.POST["af"], artikel=a.nummer)
             services.freigabe(af, act, u, request.POST.get("kommentar", "").strip())
             messages.success(request, {"einreichen": "Zur Freigabe eingereicht.", "freigeben": "Freigegeben.", "ablehnen": "Abgelehnt."}[act])
@@ -239,9 +246,11 @@ def importe(request):
         try:
             if not f:
                 raise ValueError("Keine Datei gewählt")
-            df = adapters.DateiQuelle(f).tabelle(art)
+            from . import ablage
+            daten = f.read()
+            df = adapters.DateiQuelle(ablage.Upload(f.name, daten)).tabelle(art)
             imp = services.importiere(art, df, request.planer, f.name, "datei", dt.date.fromisoformat(st) if st else None,
-                                      request.POST.get("bezeichnung", ""))
+                                      request.POST.get("bezeichnung", ""), ablage=ablage.speichern(art, f.name, daten))
             messages.success(request, f"{imp.get_art_display()}: {imp.zeilen} Zeilen importiert. {imp.meldungen}")
             if art == "dto" and request.POST.get("loop"):
                 erg = services.loop(request.planer)
@@ -312,12 +321,48 @@ def matrix(request):
 
 
 # ---------------------------------------------------------------- Parameter
+EINSTELLBAR = [
+    ("signale.ping_schwelle", "Hinweis ab Abweichung (kurzfristig)", "anteil", "z. B. 20 für ±20 %"),
+    ("signale.ping_tage", "Zeitfenster kurzfristige Abweichung (Tage)", "int", ""),
+    ("signale.ping_min_stueck", "Mindestabweichung in Stück", "zahl", ""),
+    ("signale.abweichung_schwelle", "Hinweis ab Abweichung mit Zeitversatz", "anteil", ""),
+    ("signale.abweichung_monate", "Monate für anhaltende Abweichung", "int", ""),
+    ("signale.ausreisser_briefing_faktor", "Ausreißer ab x-fachem 12-Monats-Schnitt", "zahl", "Briefing: 3 (= 300 %)"),
+    ("netting.sicherheitsbestand_monate", "Sicherheitsbestand (Monate Bruttobedarf)", "zahl", ""),
+    ("baseline.horizont_monate", "Forecast-Horizont (Monate)", "int", "6 bis 12"),
+    ("accuracy.lag_quelle", "Zeitversatz aus", "wahl:artikel,fest", "artikel = Planungsvorlauf je Artikel"),
+    ("accuracy.lag_monate_default", "Zeitversatz Standard (Monate)", "int", ""),
+    ("accuracy.fenster_monate", "Auswertungsfenster Accuracy (Monate)", "int", ""),
+]
+
+
+def _param_wert(params, pfad):
+    x = params
+    for t in pfad.split("."):
+        x = x.get(t, {}) if isinstance(x, dict) else {}
+    return x if x != {} else None
+
+
 def parameter(request):
     if request.method == "POST":
         u = request.planer
         act = request.POST.get("aktion")
         try:
-            if act == "wachstum_neu":
+            if act == "param_setzen":
+                from .models import Parameterwert
+                key = request.POST["schluessel"]
+                typ = dict((k, t) for k, _, t, _ in EINSTELLBAR)[key]
+                roh = request.POST["wert"].strip().replace(",", ".")
+                wert = (float(roh) / 100 if typ == "anteil" else int(float(roh)) if typ == "int"
+                        else roh if typ.startswith("wahl:") else float(roh))
+                if typ.startswith("wahl:") and wert not in typ[5:].split(","):
+                    raise ValueError(f"erlaubt: {typ[5:]}")
+                Parameterwert.objects.create(schluessel=key, wert=wert, gueltig_ab=dt.date.fromisoformat(request.POST["ab"]),
+                                             notiz=request.POST.get("notiz", ""), von=u)
+                services.params_zuruecksetzen()
+                services.protokoll(u, f"Parameter {key}", "gesetzt", f"{wert} ab {request.POST['ab']}")
+                messages.success(request, "Parameter gespeichert. Gilt ab dem angegebenen Datum für neue Läufe und Prüfungen.")
+            elif act == "wachstum_neu":
                 w = float(request.POST["wachstum"].replace(",", ".").replace("%", "")) / 100
                 ebene = request.POST["ebene"]
                 schl = request.POST.get("schluessel", "").strip() if ebene != "global" else ""
@@ -333,7 +378,12 @@ def parameter(request):
         except (ValueError, KeyError) as e:
             messages.error(request, f"Eingabe ungültig: {e}")
         return redirect("parameter")
+    from .models import Parameterwert
+    p = services.params()
+    einstellbar = [dict(schluessel=k, label=l, typ=t, hinweis=h, wert=_param_wert(p, k),
+                        historie=list(Parameterwert.objects.filter(schluessel=k)[:5])) for k, l, t, h in EINSTELLBAR]
     return render(request, "planung/parameter.html", dict(
+        einstellbar=einstellbar, heute=timezone.localdate(),
         wachstum=Marktwachstum.objects.filter(aktiv=True), wachstum_alt=Marktwachstum.objects.filter(aktiv=False)[:20],
         projekte=Projektmenge.objects.filter(aktiv=True).order_by("artikel", "ab"),
         gruppen=sorted(set(Artikel.objects.values_list("produktgruppe", flat=True))),
@@ -351,7 +401,7 @@ def accuracy(request):
     verlauf = services.accuracy_verlauf()
     arts = {a.nummer: a for a in Artikel.objects.all()}
     sm = services.stichtag_monat()
-    qs = AccuracyWert.objects.filter(monat__gte=services.monat(sm - 12)) if sm else AccuracyWert.objects.none()
+    qs = AccuracyWert.objects.filter(standort="", monat__gte=services.monat(sm - 12)) if sm else AccuracyWert.objects.none()
     je_cluster = []
     for cl in sorted({a.cluster for a in arts.values()}):
         k = services.kennzahlen(qs.filter(artikel__in=[n for n, a in arts.items() if a.cluster == cl]))
@@ -361,7 +411,11 @@ def accuracy(request):
         dict(name="WMAPE", farbe="final", werte=[round(v["wmape"] * 100, 1) if v["wmape"] is not None else None for v in verlauf]),
         dict(name="Bias", farbe="emp", gestrichelt=True, werte=[round(v["bias"] * 100, 1) if v["bias"] is not None else None for v in verlauf]),
     ], einheit="%")
+    qs_site = AccuracyWert.objects.exclude(standort="").filter(monat__gte=services.monat(sm - 12)) if sm else AccuracyWert.objects.none()
+    je_standort = [dict(standort=st, **services.kennzahlen(qs_site.filter(standort=st)))
+                   for st in sorted(set(qs_site.values_list("standort", flat=True)))]
     return render(request, "planung/accuracy.html", dict(verlauf=list(reversed(verlauf)), je_cluster=je_cluster, k=services.kennzahlen(qs),
+                                                          je_standort=je_standort,
                                                           chart=chart, lag_default=services.params()["accuracy"]["lag_monate_default"]))
 
 
@@ -464,3 +518,40 @@ def bericht(request, pfad):
     r = FileResponse(open(p, "rb"), content_type=ctype)
     r["X-Robots-Tag"] = "noindex, nofollow"
     return r
+
+
+# ---------------------------------------------------------------- REST (vorbereitet, intern; Basic Auth wie die Oberfläche)
+def _api_positionen(af, standort=None):
+    zs = af.zeilen.all().order_by("standort", "monat")
+    if standort:
+        zs = zs.filter(standort=standort)
+    return [dict(standort=z.standort, monat=str(z.monat)[:7], statistik=round(z.stat, 2), wachstum=round(z.wachstum, 2),
+                 projekt=round(z.projekt, 2), brutto=round(z.brutto, 2), abzug_bestand=round(z.abzug_bestand, 2),
+                 netto=round(z.netto, 2), status=z.status, flags=z.flags) for z in zs]
+
+
+def api_forecast(request):
+    """GET /api/v1/forecast?artikel=A-1001&standort=Nanjing&stand=vorschlag|freigegeben"""
+    welcher = request.GET.get("stand", "freigegeben")
+    artikel = [request.GET["artikel"]] if request.GET.get("artikel") else list(Artikel.objects.filter(aktiv=True).values_list("nummer", flat=True))
+    out = []
+    for a in artikel:
+        af = services.aktueller_vorschlag(a) if welcher == "vorschlag" else services.aktueller_freigegebener(a)
+        if not af:
+            continue
+        out.append(dict(artikel=a, lauf=af.lauf_id, stichtag=str(af.lauf.stichtag_monat)[:7], status=af.status,
+                        anlass=af.lauf.anlass, positionen=_api_positionen(af, request.GET.get("standort"))))
+    return JsonResponse({"stand": welcher, "artikel": out}, json_dumps_params={"ensure_ascii": False})
+
+
+def api_accuracy(request):
+    """GET /api/v1/accuracy?artikel=A-1001&ebene=artikel|standort&standort=Nanjing"""
+    ebene = request.GET.get("ebene", "artikel")
+    qs = AccuracyWert.objects.filter(standort="") if ebene == "artikel" else AccuracyWert.objects.exclude(standort="")
+    if request.GET.get("artikel"):
+        qs = qs.filter(artikel=request.GET["artikel"])
+    if request.GET.get("standort"):
+        qs = qs.filter(standort=request.GET["standort"])
+    werte = [dict(artikel=v.artikel, standort=v.standort, monat=str(v.monat)[:7], lag=v.lag, forecast=round(v.forecast, 2),
+                  statistik=round(v.stat or 0, 2), ist=round(v.ist, 2)) for v in qs.order_by("artikel", "standort", "monat")[:5000]]
+    return JsonResponse({"ebene": ebene, "kennzahlen": services.kennzahlen(qs), "werte": werte}, json_dumps_params={"ensure_ascii": False})

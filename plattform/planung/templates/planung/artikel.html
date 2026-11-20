@@ -14,11 +14,17 @@
 
   <div class="panel"><h2>Brutto → Netto je Standort</h2>
     {% if vs %}
+    <p class="msg warning" style="margin:0 0 8px">Fortschreibungsregel vorläufig: Gewichte und Cluster-Logik sind bis zur Analyse der Planungs-Excel „AE Welt_BU PS“ Annahmen (offene Punkte 1 und 5).</p>
     <p class="note">Rechnung: {{ vs.erklaerung.rechnung }} · Wachstum {{ vs.erklaerung.wachstum_pa|pct:"s" }} p. a. ({{ vs.erklaerung.wachstum_quelle }})
       {% if vs.erklaerung.bereinigt %} · bereinigte Monate: {{ vs.erklaerung.bereinigt|join:", " }}{% endif %}</p>
     {% for site, zs in tabelle.items %}
       {% with s=summen|get:site b=vs.erklaerung.bestand|get:site %}
-      <h3 style="font-size:14px;margin:14px 0 4px">{{ site|default:"Artikelebene" }}</h3>
+      <h3 style="font-size:14px;margin:14px 0 4px">{{ site|default:"Artikelebene" }}
+        {% for st in s.status %}<span class="chip {% if st == 'Freigegeben' %}ok{% elif st == 'Abgelehnt' %}bad{% else %}info{% endif %}">{{ st }}</span>{% endfor %}
+        {% for fl in s.flags %}<span class="chip warn">{% if fl == 'ausreisser' %}Ausreißer-Verdacht{% elif fl == 'projekt' %}Projektmenge{% elif fl == 'abkuendigung' %}Abkündigung{% elif fl == 'ohne_matrix' %}ohne Matrix{% else %}{{ fl }}{% endif %}</span>{% endfor %}</h3>
+      {% if freigabe_moeglich.standort and vs.status == 'warte_freigabe' and 'freigegeben' not in s.status_roh and 'abgelehnt' not in s.status_roh %}
+      <form method="post" class="toolbar">{% csrf_token %}<input type="hidden" name="af" value="{{ vs.id }}"><input type="hidden" name="standort" value="{{ site }}">
+        <button class="p" name="aktion" value="standort_freigeben">Standort {{ site }} freigeben</button><button class="d" name="aktion" value="standort_ablehnen">ablehnen</button></form>{% endif %}
       <div class="flow"><span>Statistik <b>{{ s.stat|stk }}</b></span><span class="op">+ Wachstum</span><b>{{ s.wachstum|stk }}</b><span class="op">+ Projekte</span><b>{{ s.projekt|stk }}</b>
         <span class="op">= Brutto</span><b>{{ s.brutto|stk }}</b><span class="op">− verfügbarer Bestand</span><b>{{ s.abzug|stk }}</b><span class="op">= Netto</span><b>{{ s.netto|stk }}</b></div>
       {% if b %}<p class="note" style="margin-top:4px">Bestand {{ b.bestand|stk }} · Transit {{ b.transit|stk }} · Intercompany {{ b.intercompany|stk }} · Sicherheitsbestand {{ vs.erklaerung.sicherheitsbestand|get:site|stk }}</p>{% endif %}

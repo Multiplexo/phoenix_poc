@@ -15,6 +15,11 @@
   <table><tr><th>Cluster</th><th class="n">Werte</th><th class="n">MAPE</th><th class="n">WMAPE</th><th class="n">Bias</th><th class="n">FVA</th></tr>
   {% for c in je_cluster %}<tr><td>{{ c.cluster }}</td><td class="n">{{ c.n }}</td><td class="n">{{ c.mape|pct }}</td><td class="n">{{ c.wmape|pct }}</td><td class="n">{{ c.bias|pct:"s" }}</td><td class="n">{{ c.fva|pp }}</td></tr>{% endfor %}</table>
 </div>
+<div class="panel"><h2>Je Standort (12 Monate)</h2>
+  <table><tr><th>Standort</th><th class="n">Werte</th><th class="n">MAPE</th><th class="n">WMAPE</th><th class="n">Bias</th><th class="n">FVA</th></tr>
+  {% for c in je_standort %}<tr><td>{{ c.standort }}</td><td class="n">{{ c.n }}</td><td class="n">{{ c.mape|pct }}</td><td class="n">{{ c.wmape|pct }}</td><td class="n">{{ c.bias|pct:"s" }}</td><td class="n">{{ c.fva|pp }}</td></tr>
+  {% empty %}<tr><td colspan="6" class="muted">Noch keine freigegebenen Positionen je Standort mit Ist.</td></tr>{% endfor %}</table>
+</div>
 <div class="panel"><h2>Je Monat</h2>
   <div class="scroll" style="max-height:420px"><table><tr><th>Monat</th><th class="n">Werte</th><th class="n">MAPE</th><th class="n">WMAPE</th><th class="n">Bias</th></tr>
   {% for v in verlauf %}<tr><td>{{ v.monat }}</td><td class="n">{{ v.n }}</td><td class="n">{{ v.mape|pct }}</td><td class="n">{{ v.wmape|pct }}</td><td class="n">{{ v.bias|pct:"s" }}</td></tr>{% endfor %}</table></div>

@@ -52,7 +52,8 @@ class Command(BaseCommand):
                                     stand_datum=dt.date(last.year, ((last.month - 1) // 3) * 3 + 1, 1))
                 fc = pio.load_forecasts(folder / "forecasts.csv")
                 sm = pd.Period(last, "M")
-                services.importiere("historie", fc[fc["snapshot"] < sm], von, "Forecast-Historie.xlsx")
+                services.importiere("historie", self._historie_je_standort(fc[fc["snapshot"] < sm], dto, folder), von,
+                                    "Forecast-Historie.xlsx")
                 services.importiere("bestand", adapters.lade_bestand(pd.read_csv(folder / "stock.csv")), von, "bestand.csv",
                                     stand_datum=last.date())
                 services.importiere("dto", dto[dto["date"] <= pd.Timestamp(stand1)], von, "DTO_bis_04.xlsx", stand_datum=stand1)
@@ -83,6 +84,17 @@ class Command(BaseCommand):
             f"Demo geladen: {Artikel.objects.count()} Artikel, {ArtikelForecast.objects.count()} Artikel-Forecasts, "
             f"Loop: {erg['accuracy']} Accuracy-Werte, {erg['signale']} Signale, {erg['neu_berechnet']} neu berechnet, "
             f"{n_doc} Beispieldokumente"))
+
+    def _historie_je_standort(self, fc, dto, folder):
+        """Demo: Excel-Historie auf Standorte aufteilen (Länderanteile der 12 Monate vor dem jeweiligen Stand x Matrix)."""
+        from pcpoc import generator
+        mx = pio.load_matrix(folder / "matrix.csv")
+        teile = []
+        for (snap, art), g in fc.groupby(["snapshot", "article"]):
+            shares, _ = generator.site_shares(dto, mx, art, snap)
+            for site, sh in (shares or {"": 1.0}).items():
+                teile.append(g.assign(site=site, stat_qty=g["stat_qty"] * sh, final_qty=g["final_qty"] * sh))
+        return pd.concat(teile, ignore_index=True)
 
     def _dokumente(self, folder, von):
         """Beispieldokumente laden, mit Regel-Fallback auswerten und eine Prüfung durch den Planer nachspielen."""

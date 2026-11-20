@@ -37,6 +37,8 @@ class ImportLauf(models.Model):
     am = models.DateTimeField(auto_now_add=True)
     zeilen = models.IntegerField(default=0)
     meldungen = models.TextField(blank=True)
+    pruefung = models.JSONField(default=dict, blank=True)  # Validierung: unbekannte Artikel/Länder, negative Mengen ...
+    ablage = models.CharField(max_length=300, blank=True)  # Rohdatei über die Speicher-Schnittstelle (STORAGES)
 
     class Meta:
         ordering = ["-am"]
@@ -174,11 +176,15 @@ class ForecastZeile(models.Model):
     brutto = models.FloatField(default=0)
     abzug_bestand = models.FloatField(default=0)
     netto = models.FloatField(default=0)
+    # Status je Position (Standort x Zielmonat); Flags: ausreisser, projekt, abkuendigung, ohne_matrix, vorlaeufig
+    status = models.CharField(max_length=20, choices=ArtikelForecast.STATUS, default="berechnet")
+    flags = models.JSONField(default=dict, blank=True)
 
 
 class AccuracyWert(models.Model):
-    """Freigegebener Forecast-Stand mit WBZ-Versatz gegen Ist, je Artikel und Monat (persistiert über die Zeit)."""
+    """Freigegebener Forecast-Stand mit WBZ-Versatz gegen Ist, je Artikel (standort leer) und je Standort und Monat."""
     artikel = models.CharField(max_length=40, db_index=True)
+    standort = models.CharField(max_length=60, blank=True, default="")
     monat = models.DateField()
     lag = models.PositiveSmallIntegerField()
     forecast = models.FloatField()
@@ -188,7 +194,7 @@ class AccuracyWert(models.Model):
     berechnet_am = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = [("artikel", "monat", "lag")]
+        unique_together = [("artikel", "standort", "monat", "lag")]
 
 
 class Signal(models.Model):
@@ -251,7 +257,8 @@ class Dokument(models.Model):
     hochgeladen_von = models.CharField(max_length=60)
     hochgeladen_am = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=STATUS, default="offen")
-    verfahren = models.CharField(max_length=40, blank=True)  # z. B. claude-opus-5-5 oder regel-fallback
+    verfahren = models.CharField(max_length=80, blank=True)  # z. B. langdock: <Modell> oder regel-fallback
+    ablage = models.CharField(max_length=300, blank=True)
     meldung = models.TextField(blank=True)
     ausgewertet_am = models.DateTimeField(null=True, blank=True)
 
@@ -294,3 +301,16 @@ class Abkuendigung(models.Model):
     erfasst_von = models.CharField(max_length=60)
     erfasst_am = models.DateTimeField(auto_now_add=True)
     aktiv = models.BooleanField(default=True)
+
+
+class Parameterwert(models.Model):
+    """Konfigurierbare Parameter und Schwellen mit Gültigkeit und Historie (überschreiben config/params.yaml)."""
+    schluessel = models.CharField(max_length=80, db_index=True)  # Pfad in params.yaml, z. B. signale.ping_schwelle
+    wert = models.JSONField()
+    gueltig_ab = models.DateField()
+    notiz = models.CharField(max_length=200, blank=True)
+    von = models.CharField(max_length=60)
+    am = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["schluessel", "-gueltig_ab", "-id"]

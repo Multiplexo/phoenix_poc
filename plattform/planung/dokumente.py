@@ -138,8 +138,9 @@ def anlegen(name: str, daten: bytes, quelle: str, von: str, datum: dt.date | Non
     d = datum or datum_datei
     if d is None:
         raise DokumentFehler("Bitte das Datum des Dokuments angeben (ab wann die Information bekannt war).")
+    from . import ablage
     return Dokument.objects.create(titel=titel or titel_datei, quelle=quelle, dateiname=name, datum=d, text=text,
-                                   artikel_hinweis=artikel_hinweis, hochgeladen_von=von)
+                                   artikel_hinweis=artikel_hinweis, hochgeladen_von=von, ablage=ablage.speichern("dokumente", name, daten))
 
 
 # ---------------------------------------------------------------- Extraktion
@@ -423,7 +424,7 @@ def _uebernehmen(ev: Ereignis, von: str) -> str:
 # ---------------------------------------------------------------- Messung
 def grosse_fehler(schwelle: float = 0.3, min_stueck: float = 100) -> list[AccuracyWert]:
     out = []
-    for v in AccuracyWert.objects.all():
+    for v in AccuracyWert.objects.filter(standort=""):
         if v.ist <= 0 and v.forecast <= 0:
             continue
         diff = v.ist - v.forecast

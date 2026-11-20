@@ -26,8 +26,44 @@ OFFEN = ("berechnet", "warte_freigabe", "freigegeben_1")
 
 # ---------------------------------------------------------------- Grundlagen
 @lru_cache(maxsize=1)
-def params() -> dict:
+def params_basis() -> dict:
     return yaml.safe_load(settings.PARAMS_FILE.read_text(encoding="utf-8"))
+
+
+_PARAMS_CACHE: dict = {"t": 0.0, "wert": None}
+
+
+def params(stichtag: dt.date | None = None) -> dict:
+    """Startwerte aus config/params.yaml, überschrieben durch gültige Parameterwerte aus der Datenbank (mit Historie).
+    Kurzer Cache (10 s), damit Änderungen auch in anderen Worker-Prozessen schnell greifen."""
+    import copy
+    import time
+    if stichtag is None and _PARAMS_CACHE["wert"] is not None and time.time() - _PARAMS_CACHE["t"] < 10:
+        return _PARAMS_CACHE["wert"]
+    p = copy.deepcopy(params_basis())
+    from .models import Parameterwert
+    heute = stichtag or timezone.localdate()
+    gesehen = set()
+    try:
+        werte = list(Parameterwert.objects.filter(gueltig_ab__lte=heute).order_by("schluessel", "-gueltig_ab", "-id"))
+    except Exception:  # z. B. vor der Migration
+        werte = []
+    for w in werte:
+        if w.schluessel in gesehen:
+            continue
+        gesehen.add(w.schluessel)
+        ziel = p
+        teile = w.schluessel.split(".")
+        for t in teile[:-1]:
+            ziel = ziel.setdefault(t, {})
+        ziel[teile[-1]] = w.wert
+    if stichtag is None:
+        _PARAMS_CACHE.update(t=time.time(), wert=p)
+    return p
+
+
+def params_zuruecksetzen() -> None:
+    _PARAMS_CACHE.update(t=0.0, wert=None)
 
 
 def monat(p: pd.Period) -> dt.date:
@@ -98,11 +134,15 @@ def stock_df() -> pd.DataFrame:
 
 
 def lag(artikel: Artikel | str) -> int:
-    if isinstance(artikel, str):
-        artikel = Artikel.objects.filter(nummer=artikel).first()
-    if artikel and artikel.wbz_monate:
-        return int(artikel.wbz_monate)
-    return int(params()["accuracy"]["lag_monate_default"])
+    """Zeitversatz für den Soll-Ist-Abgleich. accuracy.lag_quelle: "artikel" (Planungsvorlauf aus dem Stamm, sonst Standard)
+    oder "fest" (immer accuracy.lag_monate_default)."""
+    acc = params()["accuracy"]
+    if acc.get("lag_quelle", "artikel") == "artikel":
+        if isinstance(artikel, str):
+            artikel = Artikel.objects.filter(nummer=artikel).first()
+        if artikel and artikel.wbz_monate:
+            return int(artikel.wbz_monate)
+    return int(acc["lag_monate_default"])
 
 
 def overrides(cutoff: pd.Period) -> generator.Overrides:
@@ -151,6 +191,7 @@ def forecast_lauf(von: str, anlass: str, artikel: list[str] | None = None, notiz
     lauf = ForecastLauf.objects.create(stichtag_monat=monat(cutoff), anlass=anlass, von=von, notiz=notiz,
                                        parameter=dict(baseline=p["baseline"], netting=p.get("netting", {}), stand=str(stand())))
     sofort = not settings.FEATURES["freigabe"]
+    ausreisser_offen = set(Signal.objects.filter(offen=True, art="ausreisser").values_list("artikel", flat=True))
     for a, g in rows.groupby("article"):
         ArtikelForecast.objects.filter(artikel=a, status__in=OFFEN).update(status="ersetzt")
         af = ArtikelForecast.objects.create(lauf=lauf, artikel=a, erklaerung=_json(info.get(a, {})),
@@ -158,11 +199,28 @@ def forecast_lauf(von: str, anlass: str, artikel: list[str] | None = None, notiz
                                             status="freigegeben" if sofort else "berechnet",
                                             freigabe1_von="(Freigabe deaktiviert)" if sofort else "",
                                             freigabe1_am=timezone.now() if sofort else None)
+        ausr = a in ausreisser_offen
+        eol = a in ov.abkuendigung
         ForecastZeile.objects.bulk_create([ForecastZeile(af=af, standort=r.site, monat=monat(r.month), stat=r.stat, wachstum=r.wachstum,
-                                                         projekt=r.projekt, brutto=r.brutto, abzug_bestand=r.abzug_bestand, netto=r.netto)
+                                                         projekt=r.projekt, brutto=r.brutto, abzug_bestand=r.abzug_bestand, netto=r.netto,
+                                                         status=af.status, flags=_flags(r, ausr, eol))
                                            for r in g.itertuples()])
     protokoll(von, f"Forecast-Lauf {lauf.id}", f"berechnet ({anlass})", f"{rows['article'].nunique()} Artikel, Stichtag {cutoff}")
     return lauf
+
+
+def _flags(r, ausreisser: bool, eol: bool) -> dict:
+    f = {}
+    if ausreisser:
+        f["ausreisser"] = True
+    if r.projekt:
+        f["projekt"] = True
+    if eol:
+        f["abkuendigung"] = True
+    if r.site == "nicht zugeordnet":
+        f["ohne_matrix"] = True
+    f["vorlaeufig"] = True  # Fortschreibungsregel noch nicht aus der Excel bestätigt (offene_punkte.md, Punkt 1)
+    return f
 
 
 def _json(x):
@@ -221,10 +279,41 @@ def freigabe(af: ArtikelForecast, aktion: str, von: str, kommentar: str = "") ->
     if kommentar:
         af.kommentar = (af.kommentar + "\n" if af.kommentar else "") + f"{von}: {kommentar}"
     af.save()
+    # Positionen folgen dem Artikel; bereits einzeln entschiedene Standorte bleiben, außer bei Ablehnung des Ganzen
+    offen_pos = af.zeilen.exclude(status__in=("freigegeben", "abgelehnt")) if aktion != "ablehnen" else af.zeilen.all()
+    offen_pos.update(status=af.status)
     if af.status == "freigegeben":
         Signal.objects.filter(artikel=af.artikel, offen=True, art__in=("ping", "abweichung")).update(
             offen=False, erledigt_von=von, erledigt_am=jetzt)
     protokoll(von, f"{af.artikel} / Lauf {af.lauf_id}", aktion, kommentar)
+    return af
+
+
+@transaction.atomic
+def freigabe_standort(af: ArtikelForecast, standort: str, aktion: str, von: str, kommentar: str = "") -> ArtikelForecast:
+    """Positionen eines Standorts bestätigen oder ablehnen (einstufig). Der Artikel ist freigegeben, wenn alle
+    Standorte freigegeben sind, und abgelehnt, wenn alle abgelehnt sind."""
+    if settings.FEATURES["zweite_stufe"]:
+        raise FreigabeFehler("Mit zweiter Freigabestufe wird je Artikel freigegeben.")
+    if af.status not in ("berechnet", "warte_freigabe") or (settings.FEATURES["freigabe"] and af.status == "berechnet"):
+        raise FreigabeFehler("Der Forecast muss zur Freigabe eingereicht sein.")
+    if aktion == "freigeben" and not darf_freigeben(von, 1):
+        raise FreigabeFehler(f"{von} ist nicht für die Freigabe berechtigt.")
+    neu = {"freigeben": "freigegeben", "ablehnen": "abgelehnt"}.get(aktion)
+    if not neu:
+        raise FreigabeFehler("Unbekannte Aktion")
+    af.zeilen.filter(standort=standort).update(status=neu)
+    st = set(af.zeilen.values_list("status", flat=True))
+    jetzt = timezone.now()
+    if st == {"freigegeben"}:
+        af.status, af.freigabe1_von, af.freigabe1_am = "freigegeben", von, jetzt
+        Signal.objects.filter(artikel=af.artikel, offen=True, art__in=("ping", "abweichung")).update(
+            offen=False, erledigt_von=von, erledigt_am=jetzt)
+    elif st == {"abgelehnt"}:
+        af.status = "abgelehnt"
+    af.kommentar = (af.kommentar + "\n" if af.kommentar else "") + f"{von}: Standort {standort} {neu}" + (f" – {kommentar}" if kommentar else "")
+    af.save()
+    protokoll(von, f"{af.artikel} / {standort} / Lauf {af.lauf_id}", f"Standort {neu}", kommentar)
     return af
 
 
@@ -240,9 +329,29 @@ def aktueller_vorschlag(artikel: str) -> ArtikelForecast | None:
 
 
 # ---------------------------------------------------------------- Loop
+def actuals_je_standort(dto: pd.DataFrame | None = None) -> dict[tuple[str, str], pd.Series]:
+    """Ist je Artikel und Standort (Land über die Matrix aufgelöst), nur abgeschlossene Monate."""
+    dto = dto_df() if dto is None else dto
+    sm = stichtag_monat()
+    if dto.empty or sm is None:
+        return {}
+    d = dto[dto["date"].dt.to_period("M") < sm].assign(monat=lambda x: x["date"].dt.to_period("M"))
+    mx = matrix_df()
+    spez = {(r.article, r.country): r.site for r in mx[mx["article"] != "*"].itertuples()}
+    std = {r.country: r.site for r in mx[mx["article"] == "*"].itertuples()}
+    d["site"] = [spez.get((a, c)) or std.get(c) or "nicht zugeordnet" for a, c in zip(d["article"], d["country"])]
+    g = d.groupby(["article", "site", "monat"])["qty"].sum()
+    out = {}
+    for (a, site), ser in g.groupby(level=[0, 1]):
+        out[(a, site)] = ser.droplevel([0, 1])
+    return out
+
+
 def accuracy_aktualisieren() -> int:
-    """Freigegebene Forecast-Stände mit WBZ-Versatz gegen abgeschlossene Ist-Monate matchen und speichern."""
-    act = actuals_df()
+    """Freigegebene Forecast-Stände mit Zeitversatz gegen abgeschlossene Ist-Monate matchen und speichern:
+    je Artikel (standort leer) und je Standort (nur Positionen mit Status freigegeben)."""
+    dto = dto_df()
+    act = actuals_df(dto)
     if act.empty:
         return 0
     released = {}
@@ -256,16 +365,31 @@ def accuracy_aktualisieren() -> int:
         s[1] += z["stat"]
     n = 0
     lags = {a.nummer: lag(a) for a in Artikel.objects.all()}
+    default = int(params()["accuracy"]["lag_monate_default"])
     for a in act.index:
-        L = lags.get(a, int(params()["accuracy"]["lag_monate_default"]))
+        L = lags.get(a, default)
         for m in act.columns:
             af = released.get((a, monat(m - L)))
             if not af or (af.id, monat(m)) not in sums:
                 continue
             fc, st = sums[(af.id, monat(m))]
-            AccuracyWert.objects.update_or_create(artikel=a, monat=monat(m), lag=L,
+            AccuracyWert.objects.update_or_create(artikel=a, standort="", monat=monat(m), lag=L,
                                                   defaults=dict(forecast=fc, stat=st, ist=float(act.loc[a, m]), af=af))
             n += 1
+    # je Standort: freigegebene Positionen (auch teilweise freigegebene Artikel)
+    pos = {}
+    for z in ForecastZeile.objects.filter(status="freigegeben").exclude(standort="") \
+            .select_related("af__lauf").order_by("af__lauf__erstellt_am"):
+        pos[(z.af.artikel, z.standort, z.af.lauf.stichtag_monat, z.monat)] = z
+    ist_site = actuals_je_standort(dto)
+    for (a, site, stand_m, m), z in pos.items():
+        L = lags.get(a, default)
+        if monat(periode(m) - L) != stand_m or periode(m) not in act.columns:
+            continue
+        ist = float(ist_site.get((a, site), pd.Series(dtype=float)).get(periode(m), 0.0))
+        AccuracyWert.objects.update_or_create(artikel=a, standort=site, monat=m, lag=L,
+                                              defaults=dict(forecast=z.brutto, stat=z.stat, ist=ist, af=z.af))
+        n += 1
     return n
 
 
@@ -316,7 +440,7 @@ def signale_erkennen() -> list[Signal]:
                 continue
             if a in unstet:
                 continue
-            vals = list(AccuracyWert.objects.filter(artikel=a, monat__gte=monat(sm - n), monat__lt=monat(sm)))
+            vals = list(AccuracyWert.objects.filter(standort="", artikel=a, monat__gte=monat(sm - n), monat__lt=monat(sm)))
             if len(vals) < n:
                 continue
             f_sum = sum(v.forecast for v in vals)
@@ -379,9 +503,11 @@ def loop(von: str) -> dict:
 # ---------------------------------------------------------------- Import
 @transaction.atomic
 def importiere(art: str, df: pd.DataFrame, von: str, dateiname: str, quelle: str = "datei", stand_datum: dt.date | None = None,
-               matrix_bezeichnung: str = "") -> ImportLauf:
-    imp = ImportLauf.objects.create(art=art, quelle=quelle, dateiname=dateiname, von=von, stand=stand_datum)
+               matrix_bezeichnung: str = "", ablage: str = "") -> ImportLauf:
+    imp = ImportLauf.objects.create(art=art, quelle=quelle, dateiname=dateiname, von=von, stand=stand_datum, ablage=ablage)
     meld = []
+    imp.pruefung = pruefen_import(art, df)
+    meld += imp.pruefung.get("hinweise", [])
     if art == "artikel":
         for r in df.itertuples():
             lead = int(r.lead_time_months) if pd.notna(r.lead_time_months) and str(r.lead_time_months) != "" else None
@@ -401,10 +527,6 @@ def importiere(art: str, df: pd.DataFrame, von: str, dateiname: str, quelle: str
             meld.append(f"{alt} vorhandene Zeilen im Zeitraum {d0}–{d1} ersetzt (erneuter Export)")
         Auftragseingang.objects.bulk_create([Auftragseingang(datum=r.date.date(), artikel=r.article, land=r.country, kunde=r.customer,
                                                              menge=float(r.qty), importlauf=imp) for r in df.itertuples()], batch_size=5000)
-        bekannt = set(Artikel.objects.values_list("nummer", flat=True))
-        unbekannt = sorted(set(df["article"]) - bekannt)
-        if unbekannt:
-            meld.append(f"{len(unbekannt)} Artikel ohne Stammdaten: {', '.join(unbekannt[:10])}")
         if imp.stand is None:
             imp.stand = d1
         imp.zeilen = len(df)
@@ -432,14 +554,60 @@ def importiere(art: str, df: pd.DataFrame, von: str, dateiname: str, quelle: str
             for a, ga in g.groupby("article"):
                 af = ArtikelForecast.objects.create(lauf=lauf, artikel=a, status="freigegeben", freigabe1_von="Excel-Historie",
                                                     brutto_summe=float(ga["final_qty"].sum()), netto_summe=float(ga["final_qty"].sum()))
-                ForecastZeile.objects.bulk_create([ForecastZeile(af=af, standort="", monat=monat(r.target), stat=float(r.stat_qty or 0),
-                                                                 brutto=float(r.final_qty or 0), netto=float(r.final_qty or 0))
+                ForecastZeile.objects.bulk_create([ForecastZeile(af=af, standort=getattr(r, "site", "") or "", monat=monat(r.target),
+                                                                 stat=float(r.stat_qty or 0), brutto=float(r.final_qty or 0),
+                                                                 netto=float(r.final_qty or 0), status="freigegeben")
                                                    for r in ga.itertuples()])
         imp.zeilen = len(df)
     imp.meldungen = "\n".join(meld)
     imp.save()
     protokoll(von, f"Import {imp.get_art_display()}", "importiert", f"{imp.zeilen} Zeilen aus {dateiname}")
     return imp
+
+
+def pruefen_import(art: str, df: pd.DataFrame) -> dict:
+    """Validierung beim Upload: unbekannte Artikel, Länder ohne Matrix-Eintrag, negative Mengen, Lücken.
+    Ergebnis wird am Import gespeichert und angezeigt; blockiert nur bei fehlenden Pflichtspalten (Adapter)."""
+    p = {"zeilen": int(len(df)), "hinweise": []}
+    if df.empty:
+        p["hinweise"].append("Datei enthält keine Zeilen")
+        return p
+    bekannt = set(Artikel.objects.values_list("nummer", flat=True))
+    if "article" in df.columns and art in ("dto", "bestand", "historie"):
+        unb = sorted(set(df["article"].astype(str)) - bekannt)
+        p["unbekannte_artikel"] = unb
+        if unb:
+            p["hinweise"].append(f"{len(unb)} Artikel ohne Stammdaten: {', '.join(unb[:10])}")
+    if art == "dto":
+        mx = matrix_df()
+        if len(mx):
+            spez = set(zip(mx.loc[mx["article"] != "*", "article"], mx.loc[mx["article"] != "*", "country"]))
+            std = set(mx.loc[mx["article"] == "*", "country"])
+            ohne = sorted({c for a, c in zip(df["article"], df["country"]) if c not in std and (a, c) not in spez})
+            p["laender_ohne_matrix"] = ohne
+            if ohne:
+                p["hinweise"].append(f"Länder ohne Matrix-Eintrag (Standort „nicht zugeordnet“): {', '.join(ohne)}")
+        neg = df[df["qty"] < 0]
+        p["negative_zeilen"] = int(len(neg))
+        p["negative_summe"] = float(neg["qty"].sum())
+        if len(neg):
+            p["hinweise"].append(f"{len(neg)} Zeilen mit negativer Menge (Retouren/Korrekturen, Σ {neg['qty'].sum():,.0f} Stk.) "
+                                 "werden mit dem Auftragseingang verrechnet (offener Punkt)".replace(",", "."))
+        p["zeitraum"] = [str(df["date"].min().date()), str(df["date"].max().date())]
+        leer = sorted(set(df["country"]) & {"??", ""})
+        if leer:
+            p["hinweise"].append("Zeilen ohne Land: Standortzuordnung nicht möglich")
+    if art == "bestand":
+        sites = set(matrix_df()["site"]) if len(matrix_df()) else set()
+        unb = sorted(set(df["site"]) - sites) if sites else []
+        p["unbekannte_standorte"] = unb
+        if unb:
+            p["hinweise"].append(f"Standorte nicht in der Matrix: {', '.join(unb)}")
+    if art == "matrix":
+        dup = df[df.duplicated(["article", "country"], keep=False)]
+        if len(dup):
+            p["hinweise"].append(f"{len(dup)} doppelte Einträge Artikel/Land, der erste gilt")
+    return p
 
 
 # ---------------------------------------------------------------- Auswertungen
@@ -488,7 +656,7 @@ def kennzahlen(qs) -> dict:
 
 
 def accuracy_verlauf(artikel: str | None = None) -> list[dict]:
-    qs = AccuracyWert.objects.all()
+    qs = AccuracyWert.objects.filter(standort="")
     if artikel:
         qs = qs.filter(artikel=artikel)
     out = []
@@ -537,7 +705,7 @@ def empfehlungen(artikel: str) -> list:
                      knowledge=knowledge, params=params())
     ds._actuals = act
     mt = pd.DataFrame([dict(article=v.artikel, target=periode(v.monat), stat_qty=v.stat or 0, final_qty=v.forecast, actual=v.ist)
-                       for v in AccuracyWert.objects.filter(artikel=artikel)])
+                       for v in AccuracyWert.objects.filter(standort="", artikel=artikel)])
     if mt.empty:
         mt = pd.DataFrame(columns=["article", "target", "stat_qty", "final_qty", "actual"])
     res = analysis.analyze(ds, artikel, sm, mt)
