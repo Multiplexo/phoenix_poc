@@ -516,6 +516,8 @@ def importiere(art: str, df: pd.DataFrame, von: str, dateiname: str, quelle: str
             if obj.cluster_quelle != "planer":
                 obj.cluster = str(r.cluster or "standard")
             obj.wbz_monate = lead
+            if "price" in df.columns and pd.notna(getattr(r, "price", None)):
+                obj.preis, obj.preis_quelle = float(r.price), "import"
             obj.save()
         imp.zeilen = len(df)
     elif art == "dto":
@@ -546,6 +548,11 @@ def importiere(art: str, df: pd.DataFrame, von: str, dateiname: str, quelle: str
         v = MatrixVersion.objects.create(bezeichnung=q, gueltig_ab=st, erstellt_von=von, notiz=f"Import {dateiname}")
         MatrixEintrag.objects.bulk_create([MatrixEintrag(version=v, artikel=r.article, land=r.country, standort=r.site)
                                            for r in df.drop_duplicates(["article", "country"]).itertuples()])
+        imp.zeilen = len(df)
+    elif art == "referenz":
+        from .models import Referenzwert
+        Referenzwert.objects.bulk_create([Referenzwert(importlauf=imp, artikel=r.article, standort=r.site, monat=monat(r.month),
+                                                       wert=float(r.value)) for r in df.itertuples()], batch_size=5000)
         imp.zeilen = len(df)
     elif art == "historie":
         for snap, g in df.groupby("snapshot"):
@@ -713,3 +720,66 @@ def empfehlungen(artikel: str) -> list:
         return []
     # Projektmengen sind im Plattform-Forecast bereits enthalten -> Wissensregel "Projekt fehlt" nur, wenn wirklich fehlt
     return res.recs
+
+
+# ---------------------------------------------------------------- „Heute zu tun“
+def _summe_monate(af: ArtikelForecast | None, monate: list[dt.date]) -> float:
+    if not af:
+        return 0.0
+    return float(sum(z.brutto for z in af.zeilen.all() if z.monat in monate))
+
+
+def aufgaben() -> list[dict]:
+    """Alle offenen Aufgaben in einer Liste, sortiert nach Mengenwirkung (Stück in den nächsten 3 Monaten).
+    Fasst Hinweise, Ausreißer, Freigaben und Ereignisse aus Dokumenten zusammen."""
+    from .models import Ereignis
+    sm = stichtag_monat()
+    nahe = [monat(sm + i) for i in range(3)] if sm else []
+    arts = {a.nummer: a for a in Artikel.objects.filter(aktiv=True)}
+    sig = {}
+    for s in Signal.objects.filter(offen=True).exclude(artikel=""):
+        sig.setdefault(s.artikel, []).append(s)
+    out = []
+    for nr, a in arts.items():
+        vs, fg = aktueller_vorschlag(nr), aktueller_freigegebener(nr)
+        s = sig.get(nr, [])
+        if not s and not (vs and vs.status in OFFEN):
+            continue
+        neu, alt = _summe_monate(vs, nahe), _summe_monate(fg, nahe)
+        delta = neu - alt if vs and fg and vs.id != fg.id else 0.0
+        ping = next((x for x in s if x.art == "ping"), None)
+        abw = next((x for x in s if x.art == "abweichung"), None)
+        ausr = next((x for x in s if x.art == "ausreisser"), None)
+        if ausr:
+            art, satz, knopf = "ausreisser", ausr.text, "Ausreißer entscheiden"
+            wirkung = abs(sum(ausr.details.get("werte", [])) - ausr.details.get("schnitt", 0) * len(ausr.details.get("werte", [])))
+        elif ping or abw:
+            x = ping or abw
+            dev = x.details.get("abweichung", 0)
+            satz = (f"Seit {params()['signale'].get('ping_tage', 14)} Tagen {abs(dev):.0%} {'mehr' if dev > 0 else 'weniger'} Aufträge als geplant"
+                    if ping else f"Seit 3 Monaten {abs(dev):.0%} {'mehr' if dev > 0 else 'weniger'} Aufträge als bestellt")
+            art, knopf = "abweichung", "Vorschlag prüfen"
+            wirkung = abs(delta) or abs(x.details.get("ist", 0) - x.details.get("soll", x.details.get("forecast", 0)))
+        else:
+            # ohne Signal zählt nur die Änderung gegenüber der Freigabe; unveränderte Vorschläge kommen ans Ende
+            unveraendert = bool(fg) and abs(delta) < 0.5
+            zusatz = " (unverändert gegenüber der Freigabe)" if unveraendert else ""
+            wirkung = abs(delta) if fg else neu * 0.1
+            if vs.status in ("warte_freigabe", "freigegeben_1"):
+                art, satz, knopf = "freigabe", "Vorschlag wartet auf Freigabe" + zusatz, "Freigeben"
+            else:
+                art, satz, knopf = "pruefen", "Neuer Vorschlag berechnet, noch nicht eingereicht" + zusatz, "Prüfen"
+        out.append(dict(art=art, artikel=nr, bezeichnung=a.bezeichnung, satz=satz, knopf=knopf, wirkung=float(wirkung),
+                        neu=neu, alt=alt, delta=delta, rel=(delta / alt) if alt else None, af=vs,
+                        direkt_freigeben=art == "freigabe" and vs and vs.status == "warte_freigabe"))
+    for e in Ereignis.objects.filter(status="vorschlag").select_related("dokument"):
+        out.append(dict(art="ereignis", artikel=e.artikel, bezeichnung=e.dokument.titel, knopf="Ereignis prüfen",
+                        satz=f"{e.get_typ_display()} aus Dokument: „{e.zitat[:90]}{'…' if len(e.zitat) > 90 else ''}“",
+                        wirkung=float((e.menge_pro_monat or 0) * 3), ereignis=e, neu=None, alt=None, delta=None, rel=None))
+    v = matrix_version()
+    if v and Signal.objects.filter(art="matrix", offen=True).exists():
+        out.append(dict(art="matrix", artikel="", bezeichnung=f"Matrix {v.bezeichnung}", knopf="Matrix prüfen",
+                        satz="Quartalsprüfung der Matrix ist fällig", wirkung=0.0, neu=None, alt=None, delta=None, rel=None))
+    reihenfolge = {"abweichung": 0, "ausreisser": 1, "freigabe": 2, "ereignis": 3, "pruefen": 4, "matrix": 5}
+    out.sort(key=lambda x: (-x["wirkung"], reihenfolge[x["art"]]))
+    return out

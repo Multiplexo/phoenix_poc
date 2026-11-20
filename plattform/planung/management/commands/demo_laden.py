@@ -30,8 +30,12 @@ class Command(BaseCommand):
     def handle(self, *args, nur_wenn_leer=False, tag=18, **kw):
         if nur_wenn_leer and Artikel.objects.exists():
             from planung.models import Dokument
-            if Dokument.objects.exists() or not Artikel.objects.filter(nummer="A-1001").exists():
+            if not Artikel.objects.filter(nummer="A-1001").exists():
                 self.stdout.write("Daten vorhanden, Demo nicht geladen.")
+                return
+            n_aus = self._auswertung_demo()
+            if Dokument.objects.exists():
+                self.stdout.write(f"Daten vorhanden, Demo nicht geladen{'; Beispielpreise und Referenz ergänzt' if n_aus else ''}.")
                 return
             # bestehende Demo-Datenbank: nur die Beispieldokumente nachladen
             with tempfile.TemporaryDirectory() as tmp:
@@ -80,10 +84,39 @@ class Command(BaseCommand):
                 services.importiere("dto", dto[dto["date"] > pd.Timestamp(stand1)], von, f"DTO_bis_{tag:02d}.xlsx", stand_datum=last.date())
                 erg = services.loop(von)
                 n_doc = self._dokumente(folder, von)
+                self._auswertung_demo()
         self.stdout.write(self.style.SUCCESS(
             f"Demo geladen: {Artikel.objects.count()} Artikel, {ArtikelForecast.objects.count()} Artikel-Forecasts, "
             f"Loop: {erg['accuracy']} Accuracy-Werte, {erg['signale']} Signale, {erg['neu_berechnet']} neu berechnet, "
             f"{n_doc} Beispieldokumente"))
+
+    def _auswertung_demo(self) -> int:
+        """Beispielpreise und eine synthetische Excel-Referenz, nur wenn noch keine echten vorhanden sind."""
+        import numpy as np
+        from planung.models import ImportLauf
+        rng = np.random.default_rng(5)
+        n = 0
+        if not Artikel.objects.exclude(preis__isnull=True).exists():
+            basis = {"PG-A": 18.0, "PG-B": 34.0, "PG-C": 52.0, "PG-D": 95.0, "PG-E": 140.0}
+            for a in Artikel.objects.all():
+                a.preis = round(basis.get(a.produktgruppe, 40.0) * float(rng.uniform(0.7, 1.4)), 2)
+                a.preis_quelle = "demo"
+                a.save(update_fields=["preis", "preis_quelle"])
+            n += 1
+        if not ImportLauf.objects.filter(art="referenz").exists():
+            rows = []
+            for i, a in enumerate(Artikel.objects.order_by("nummer").values_list("nummer", flat=True)):
+                vs = services.aktueller_vorschlag(a)
+                if not vs:
+                    continue
+                abweichend = i % 7 == 2  # einige Artikel rechnet die Excel anders (z. B. andere Cluster-Regel)
+                for z in vs.zeilen.all():
+                    f = (1 + float(rng.uniform(0.04, 0.15)) * (1 if i % 2 else -1)) if abweichend else (1 + float(rng.normal(0, 0.006)))
+                    rows.append(dict(article=a, site=z.standort, month=pd.Period(z.monat, "M"), value=round(z.brutto * f, 1)))
+            if rows:
+                services.importiere("referenz", pd.DataFrame(rows), "demo", "Beispiel-Referenz (synthetisch).xlsx")
+                n += 1
+        return n
 
     def _historie_je_standort(self, fc, dto, folder):
         """Demo: Excel-Historie auf Standorte aufteilen (Länderanteile der 12 Monate vor dem jeweiligen Stand x Matrix)."""

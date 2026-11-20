@@ -17,6 +17,8 @@ class Artikel(models.Model):
     cluster = models.CharField(max_length=30, default="standard")
     cluster_quelle = models.CharField(max_length=20, default="stamm")  # stamm | planer
     wbz_monate = models.PositiveSmallIntegerField(null=True, blank=True)
+    preis = models.FloatField(null=True, blank=True, help_text="Standardkosten/Preis je Stück in Euro")
+    preis_quelle = models.CharField(max_length=20, blank=True)  # import | demo
     aktiv = models.BooleanField(default=True)
 
     class Meta:
@@ -28,7 +30,7 @@ class Artikel(models.Model):
 
 class ImportLauf(models.Model):
     ARTEN = [("dto", "Auftragseingang (DTO)"), ("bestand", "Bestand / Transit / Intercompany"), ("matrix", "Matrix"),
-             ("artikel", "Artikelstamm"), ("historie", "Forecast-Historie")]
+             ("artikel", "Artikelstamm (inkl. Preis)"), ("historie", "Forecast-Historie"), ("referenz", "Referenz-Forecast aus der Excel")]
     art = models.CharField(max_length=20, choices=ARTEN)
     quelle = models.CharField(max_length=20, default="datei")  # datei | rest
     dateiname = models.CharField(max_length=255, blank=True)
@@ -314,3 +316,12 @@ class Parameterwert(models.Model):
 
     class Meta:
         ordering = ["schluessel", "-gueltig_ab", "-id"]
+
+
+class Referenzwert(models.Model):
+    """Ergebnis der Planungs-Excel (z. B. „AE Welt_BU PS“) für den Paritätsabgleich."""
+    importlauf = models.ForeignKey(ImportLauf, on_delete=models.CASCADE, related_name="referenzwerte")
+    artikel = models.CharField(max_length=40, db_index=True)
+    standort = models.CharField(max_length=60, blank=True)  # leer = Artikelebene
+    monat = models.DateField()
+    wert = models.FloatField()

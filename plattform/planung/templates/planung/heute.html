@@ -1,0 +1,10 @@
+{% extends "planung/base.html" %}{% load planung_tags %}
+{% block title %}Heute zu tun{% endblock %}
+{% block content %}
+<h1>Heute zu tun</h1>
+<div class="sub">{% if n %}{{ n }} offene Aufgaben, die wichtigsten zuerst (nach Stückwirkung in den nächsten drei Monaten).{% else %}Nichts offen. Alle Vorschläge sind geprüft.{% endif %}
+  {% if zaehler.abweichung %} · {{ zaehler.abweichung }} Abweichungen{% endif %}{% if zaehler.ausreisser %} · {{ zaehler.ausreisser }} Ausreißer{% endif %}{% if zaehler.freigabe %} · {{ zaehler.freigabe }} Freigaben{% endif %}{% if zaehler.ereignis %} · {{ zaehler.ereignis }} Ereignisse aus Dokumenten{% endif %}</div>
+{% for x in top %}{% include "planung/_aufgabe.html" %}{% endfor %}
+{% if rest %}<details><summary class="btn" style="margin:6px 0 12px">Weitere {{ rest|length }} Aufgaben anzeigen</summary>
+{% for x in rest %}{% include "planung/_aufgabe.html" %}{% endfor %}</details>{% endif %}
+{% endblock %}

@@ -1,0 +1,48 @@
+{% load planung_tags %}<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow">
+<title>Abschlussbericht PoC Bedarfsplanung</title>
+<style>
+:root{--ink:#101D35;--muted:#4D5A6E;--line:#e3dfd5;--bg:#F5F3EE;--panel:#fff;--gold:#7A5C24;--accent:#0e6b72}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--ink:#F5F3EE;--muted:#A3AEBF;--line:#3A4558;--bg:#101D35;--panel:#182540;--gold:#CBA76A;--accent:#16C8DB}}
+:root[data-theme="dark"]{--ink:#F5F3EE;--muted:#A3AEBF;--line:#3A4558;--bg:#101D35;--panel:#182540;--gold:#CBA76A;--accent:#16C8DB}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 Montserrat,Arial,sans-serif}
+main{max-width:860px;margin:0 auto;padding:40px 18px 60px}
+.eb{font-size:12px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--gold)}
+h1{font-size:30px;line-height:1.15;margin:8px 0 6px}h2{font-size:19px;margin:30px 0 8px;border-top:1px solid var(--line);padding-top:18px}
+.sub{color:var(--muted)}.demo{background:#fff3d6;color:#7a5200;padding:8px 12px;margin:14px 0}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:14px 0}
+.kpi{background:var(--panel);border:1px solid var(--line);padding:12px}.kpi .v{font-size:24px;font-weight:800}.kpi .l{font-size:12px;color:var(--muted)}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left}td.n,th.n{text-align:right}
+th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+@media print{body{background:#fff;color:#000}.kpi{break-inside:avoid}}
+</style></head><body><main>
+<div class="eb">Abschlussbericht · PoC AG0021</div>
+<h1>Bedarfsplanung messbar machen</h1>
+<div class="sub">Phoenix Contact Power Supplies · BU Paderborn · Datenstand {{ z.stand|date:"d.m.Y" }} · erstellt {{ z.erstellt|date:"d.m.Y H:i" }} · Multiplexo GmbH</div>
+{% if z.demo %}<div class="demo">Demo-Daten: Dieser Bericht wurde mit synthetischen Daten erzeugt. Die Zahlen zeigen nur das Verfahren.</div>{% endif %}
+<h2>Zusammenfassung</h2>
+<div class="kpis">
+  <div class="kpi"><div class="l">Gleich wie die Excel</div><div class="v">{% if z.paritaet.vorhanden %}{{ z.paritaet.anteil_ok|pct }}{% else %}–{% endif %}</div></div>
+  <div class="kpi"><div class="l">Abweichung heute (WMAPE)</div><div class="v">{{ z.gesamt.wmape|pct }}</div></div>
+  <div class="kpi"><div class="l">Monatslauf statt Quartal</div><div class="v">{% if z.rhythmus.gesamt.n %}{{ z.rhythmus.gesamt.verbesserung|pp }}{% else %}–{% endif %}</div></div>
+  <div class="kpi"><div class="l">Vorher bekannt</div><div class="v">{{ z.messung.abdeckung|pct }}</div></div>
+</div>
+<p>Die Plattform rechnet den Forecast je Standort aus Auftragseingang, Matrix und Parametern, nettet gegen den Bestand und misst laufend, wie gut der freigegebene Stand das spätere Ist trifft. Planer prüfen und geben frei; jede Änderung ist protokolliert.</p>
+<h2>Datenbasis</h2>
+<p>{{ z.n_artikel }} Artikel · {{ z.n_monate }} Monate Auftragseingang ({{ z.n_dto|stk }} Zeilen) · {{ z.n_staende }} Forecast-Stände (davon {{ z.n_historie }} aus der Excel-Historie) · {{ z.n_dokumente }} Dokumente.</p>
+{% if z.paritaet.vorhanden %}<h2>Abgleich mit der Excel</h2>
+<p>{{ z.paritaet.anteil_ok|pct }} von {{ z.paritaet.n_vergleichbar }} Positionen liegen innerhalb ±{{ z.paritaet.toleranz|pct }}. Summe Excel {{ z.paritaet.summe_ref|stk }} Stk., Summe Plattform {{ z.paritaet.summe_plattform|stk }} Stk.{% if z.paritaet.synthetisch %} (synthetische Referenz){% endif %}</p>{% endif %}
+<h2>Treffgenauigkeit und Wirkung der Eingriffe</h2>
+<table><tr><th>Cluster</th><th class="n">Statistik</th><th class="n">Freigegeben</th><th class="n">Tendenz</th><th class="n">Eingriffe</th></tr>
+{% for c in z.je_cluster %}<tr><td>{{ c.cluster }}</td><td class="n">{{ c.wmape_stat|pct }}</td><td class="n">{{ c.wmape|pct }}</td><td class="n">{{ c.bias|pct:"s" }}</td><td class="n">{{ c.fva|pp }}</td></tr>{% endfor %}</table>
+{% if z.rhythmus.gesamt.n %}<h2>Planungsrhythmus</h2>
+<p>Quartalslauf {{ z.rhythmus.gesamt.wmape_quartal|pct }}, Monatslauf {{ z.rhythmus.gesamt.wmape_monat|pct }} Abweichung: {{ z.rhythmus.gesamt.fehler_weniger|stk }} Stück weniger Fehlplanung in {{ z.rhythmus.fenster }} Monaten, bei gleicher Rechenregel.</p>{% endif %}
+{% if z.euro.artikel_mit_preis %}<h2>Bewertung in Euro</h2>
+<p>Fehlplanung der letzten 12 Monate zu Standardkosten: {{ z.euro.gesamt|stk }} € (zu hoch {{ z.euro.zu_hoch|stk }} €, zu niedrig {{ z.euro.zu_niedrig|stk }} €){% if z.euro.rhythmus_euro %}; ein Monatslauf hätte davon {{ z.euro.rhythmus_euro|stk }} € vermieden{% endif %}.{% if z.euro.demo %} Preise sind Beispielwerte.{% endif %}</p>{% endif %}
+{% if z.messung.n_geprueft %}<h2>Pilot „Kontext lesen“</h2>
+<p>{{ z.messung.abdeckung|pct }} der großen Forecast-Fehler ({{ z.messung.n_abgedeckt }} von {{ z.messung.n_fehler }}) hatten eine Ursache, die vorher in einem Dokument stand, im Mittel {{ z.messung.vorwarnzeit|floatformat:1 }} Monate vorher. Treffsicherheit der KI-Vorschläge: {{ z.messung.treffsicherheit|pct }} bei {{ z.messung.n_geprueft }} geprüften Vorschlägen.</p>{% endif %}
+<h2>Grenzen</h2>
+<ul><li>Fortschreibungsregel und Schwellen sind bis zur vollständigen Excel-Analyse vorläufig (docs/offene_punkte.md).</li><li>Euro-Bewertung zu Standardkosten, ohne Kapital- und Fehlmengenkosten.</li><li>Rückblickende Messung; die Wirkung im Alltag zeigt erst der Pilotbetrieb.</li></ul>
+<h2>Empfehlung</h2>
+<p><b>Option A: Pilotbetrieb über drei Monate</b> mit monatlichem Lauf für die Pilotgruppen; danach Entscheidung über den Ausbau (weitere Produktgruppen, SAP-Anbindung, SSO) und die Übergabe bewährter Regeln an SAP IBP.</p>
+</main></body></html>

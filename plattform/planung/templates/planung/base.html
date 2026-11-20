@@ -18,17 +18,16 @@
 </div></div>
 {% with p=request.resolver_match.url_name %}
 <nav class="main"><div>
-  <a href="{% url 'uebersicht' %}" class="{% if p == 'uebersicht' or p == 'artikel' %}on{% endif %}">Übersicht</a>
-  <a href="{% url 'hinweise' %}" class="{% if p == 'hinweise' %}on{% endif %}">Hinweise{% if offene_hinweise %}<span class="cnt">{{ offene_hinweise }}</span>{% endif %}</a>
-  <a href="{% url 'accuracy' %}" class="{% if p == 'accuracy' %}on{% endif %}">Forecast Accuracy</a>
+  <a href="{% url 'heute' %}" class="{% if p == 'heute' %}on{% endif %}">Heute zu tun{% if offene_hinweise or offene_ereignisse %}<span class="cnt">{{ offene_hinweise|add:offene_ereignisse }}</span>{% endif %}</a>
+  <a href="{% url 'uebersicht' %}" class="{% if p == 'uebersicht' or p == 'artikel' or p == 'akte' %}on{% endif %}">Artikel</a>
   <a href="{% url 'werke' %}" class="{% if p == 'werke' %}on{% endif %}">Forecast an die Werke</a>
-  <a href="{% url 'dokumente' %}" class="{% if p == 'dokumente' or p == 'dokument' or p == 'warteschlange' or p == 'messung' %}on{% endif %}">Dokumente{% if offene_ereignisse %}<span class="cnt" style="background:var(--pet-d)">{{ offene_ereignisse }}</span>{% endif %}</a>
-  <a href="{% url 'import' %}" class="{% if p == 'import' %}on{% endif %}">Import</a>
-  <a href="{% url 'matrix' %}" class="{% if p == 'matrix' %}on{% endif %}">Matrix</a>
-  <a href="{% url 'parameter' %}" class="{% if p == 'parameter' %}on{% endif %}">Parameter</a>
-  <a href="{% url 'laeufe' %}" class="{% if p == 'laeufe' %}on{% endif %}">Läufe</a>
-  <a href="{% url 'protokoll' %}" class="{% if p == 'protokoll' %}on{% endif %}">Protokoll</a>
-  <a href="/bericht/">Voranalyse & Präsentationen</a>
+  <div class="grp {% if p == 'dokumente' or p == 'dokument' or p == 'warteschlange' %}on{% endif %}" tabindex="0"><span>Wissen ▾</span><div class="dd">
+    <a href="{% url 'dokumente' %}">Dokumente</a><a href="{% url 'warteschlange' %}">Ereignisse prüfen{% if offene_ereignisse %} ({{ offene_ereignisse }}){% endif %}</a><a href="{% url 'hinweise' %}">Alle Hinweise</a></div></div>
+  <div class="grp {% if p == 'accuracy' or p == 'messung' or p == 'rhythmus' or p == 'paritaet' or p == 'abschluss' or p == 'euro' %}on{% endif %}" tabindex="0"><span>Auswertung ▾</span><div class="dd">
+    <a href="{% url 'accuracy' %}">Treffgenauigkeit</a><a href="{% url 'rhythmus' %}">Planungsrhythmus Quartal / Monat</a><a href="{% url 'euro' %}">Bewertung in Euro</a>
+    <a href="{% url 'paritaet' %}">Abgleich mit der Excel</a><a href="{% url 'messung' %}">Was war vorher bekannt?</a><a href="{% url 'abschluss' %}">Abschluss: Bericht und Präsentation</a><a href="/bericht/">Voranalyse und Präsentationen (Demo)</a></div></div>
+  <div class="grp {% if p == 'import' or p == 'matrix' or p == 'parameter' or p == 'laeufe' or p == 'protokoll' %}on{% endif %}" tabindex="0"><span>Verwaltung ▾</span><div class="dd">
+    <a href="{% url 'import' %}">Import</a><a href="{% url 'matrix' %}">Matrix</a><a href="{% url 'parameter' %}">Parameter</a><a href="{% url 'laeufe' %}">Läufe</a><a href="{% url 'protokoll' %}">Protokoll</a></div></div>
 </div></nav>
 {% endwith %}
 <main>
@@ -36,5 +35,16 @@
 {% block content %}{% endblock %}
 </main>
 <script src="{% static 'planung/chart.js' %}"></script>
+<script>
+document.querySelectorAll("[data-tabs]").forEach(box => {
+  const btns = box.querySelectorAll("[data-tab]"), secs = box.querySelectorAll("[data-sec]");
+  const show = id => { btns.forEach(b => b.classList.toggle("on", b.dataset.tab === id)); secs.forEach(s => s.hidden = s.dataset.sec !== id);
+    try { sessionStorage.setItem("tab:" + location.pathname, id); } catch (e) {} };
+  btns.forEach(b => b.addEventListener("click", () => show(b.dataset.tab)));
+  let start = btns[0] && btns[0].dataset.tab; try { start = sessionStorage.getItem("tab:" + location.pathname) || start; } catch (e) {}
+  if (location.hash && box.querySelector(`[data-sec="${location.hash.slice(1)}"]`)) start = location.hash.slice(1);
+  show(start);
+});
+</script>
 </body>
 </html>

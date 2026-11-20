@@ -1,0 +1,16 @@
+{% load planung_tags %}
+<div class="aufgabe {{ x.art }}">
+  <div>
+    <div class="t">{% if x.artikel %}{{ x.artikel }} · {% endif %}<span class="muted" style="font-weight:400">{{ x.bezeichnung }}</span></div>
+    <div class="s">{{ x.satz }}</div>
+    <div class="acts">
+      {% if x.art == "ereignis" %}<a class="btn p" href="{% url 'warteschlange' %}">{{ x.knopf }}</a>
+      {% elif x.art == "matrix" %}<a class="btn p" href="{% url 'matrix' %}">{{ x.knopf }}</a>
+      {% else %}<a class="btn p" href="{% url 'artikel' x.artikel %}">{{ x.knopf }}</a>
+        {% if x.direkt_freigeben %}<form method="post" action="{% url 'artikel' x.artikel %}" class="inline">{% csrf_token %}<input type="hidden" name="af" value="{{ x.af.id }}"><input type="hidden" name="zurueck" value="{% url 'heute' %}"><button name="aktion" value="freigeben">Direkt freigeben</button></form>{% endif %}
+      {% endif %}
+    </div>
+  </div>
+  <div class="w">{% if x.delta %}{% if x.delta > 0 %}+{% endif %}{{ x.delta|stk }} Stk.<small>Vorschlag gegenüber Freigabe, nächste 3 Monate{% if x.rel is not None %} ({{ x.rel|pct:"s" }}){% endif %}</small>
+    {% elif x.neu %}{{ x.neu|stk }} Stk.<small>Bedarf nächste 3 Monate</small>{% elif x.wirkung %}{{ x.wirkung|stk }} Stk.<small>betroffene Menge</small>{% endif %}</div>
+</div>

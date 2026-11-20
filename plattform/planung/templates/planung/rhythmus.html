@@ -1,0 +1,19 @@
+{% extends "planung/base.html" %}{% load planung_tags %}
+{% block title %}Planungsrhythmus{% endblock %}
+{% block content %}
+<h1>Quartal oder Monat?</h1>
+<div class="sub">Rückvergleich über {{ r.fenster }} Monate: Wie genau wäre der Forecast, auf dessen Basis bestellt wird, wenn monatlich statt quartalsweise fortgeschrieben würde? Gleiche Rechenregel, keine Planer-Eingriffe. Einziger Unterschied ist, wie alt die Information ist.</div>
+{% if r.gesamt.n %}
+<div class="kpis">
+  <div class="kpi"><div class="l">Abweichung Quartalslauf</div><div class="v">{{ r.gesamt.wmape_quartal|pct }}</div><div class="h">Information im Schnitt {{ r.gesamt.alter_quartal|floatformat:1 }} Monate alt</div></div>
+  <div class="kpi g"><div class="l">Abweichung Monatslauf</div><div class="v">{{ r.gesamt.wmape_monat|pct }}</div><div class="h">Information im Schnitt {{ r.gesamt.alter_monat|floatformat:1 }} Monate alt</div></div>
+  <div class="kpi"><div class="l">Gewinn durch Monatslauf</div><div class="v">{{ r.gesamt.verbesserung|pp }}</div><div class="h">{{ r.gesamt.fehler_weniger|stk }} Stück weniger Fehlplanung</div></div>
+  <div class="kpi"><div class="l">Tendenz</div><div class="v">{{ r.gesamt.bias_quartal|pct:"s" }} → {{ r.gesamt.bias_monat|pct:"s" }}</div><div class="h">Quartal → Monat (positiv = zu hoch geplant)</div></div>
+</div>
+<div class="panel"><h2>Abweichung je Monat</h2><div data-chart="chart-data"></div>{{ chart|json_script:"chart-data" }}</div>
+<div class="panel"><h2>Je Cluster</h2>
+  <table><tr><th>Cluster</th><th class="n">Werte</th><th class="n">Quartal</th><th class="n">Monat</th><th class="n">Gewinn</th><th class="n">Stück weniger Fehler</th></tr>
+  {% for c in r.je_cluster %}<tr><td>{{ c.cluster }}</td><td class="n">{{ c.n }}</td><td class="n">{{ c.wmape_quartal|pct }}</td><td class="n">{{ c.wmape_monat|pct }}</td><td class="n">{{ c.verbesserung|pp }}</td><td class="n">{{ c.fehler_weniger|stk }}</td></tr>{% endfor %}</table>
+  <p class="note">Besonders bei Hochläufen und Abkündigungen zahlt sich frische Information aus. Die Euro-Wirkung steht unter „Bewertung in Euro“.</p></div>
+{% else %}<div class="panel muted">Noch zu wenig Historie für den Vergleich.</div>{% endif %}
+{% endblock %}

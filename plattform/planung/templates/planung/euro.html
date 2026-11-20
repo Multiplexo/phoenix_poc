@@ -1,0 +1,22 @@
+{% extends "planung/base.html" %}{% load planung_tags %}
+{% block title %}Bewertung in Euro{% endblock %}
+{% block content %}
+<h1>Bewertung in Euro</h1>
+<div class="sub">Forecast-Fehler der letzten 12 Monate (freigegebener Stand mit Lieferzeit-Versatz gegen Ist) mal Preis je Stück. Zu hoch geplant bindet Kapital im Bestand, zu niedrig geplant gefährdet die Lieferfähigkeit.</div>
+{% if e.demo %}<div class="msg warning">Beispielpreise (synthetisch). Mit den Standardkosten von Phoenix (Anforderungsliste A6) über den Artikelstamm-Import ersetzen.</div>{% endif %}
+{% if e.artikel_mit_preis %}
+<div class="kpis">
+  <div class="kpi"><div class="l">Fehlplanung gesamt</div><div class="v">{{ e.gesamt|stk }} €</div><div class="h">{{ e.artikel_mit_preis }} von {{ e.artikel }} Artikeln mit Preis</div></div>
+  <div class="kpi"><div class="l">Zu hoch geplant</div><div class="v">{{ e.zu_hoch|stk }} €</div><div class="h">Risiko Überbestand</div></div>
+  <div class="kpi"><div class="l">Zu niedrig geplant</div><div class="v">{{ e.zu_niedrig|stk }} €</div><div class="h">Risiko Lieferunfähigkeit</div></div>
+  {% if e.rhythmus_euro is not None %}<div class="kpi g"><div class="l">Weniger Fehlplanung durch Monatslauf</div><div class="v">{{ e.rhythmus_euro|stk }} €</div><div class="h">aus dem Rhythmus-Vergleich</div></div>{% endif %}
+  <div class="kpi"><div class="l">Freigegebener Netto-Forecast</div><div class="v">{{ e.volumen_netto|stk }} €</div><div class="h">nächste 12 Monate</div></div>
+</div>
+<div class="grid2">
+<div class="panel"><h2>Je Cluster</h2><table><tr><th>Cluster</th><th class="n">zu hoch</th><th class="n">zu niedrig</th><th class="n">gesamt</th></tr>
+  {% for c in e.je_cluster %}<tr><td>{{ c.cluster }}</td><td class="n">{{ c.zu_hoch|stk }} €</td><td class="n">{{ c.zu_niedrig|stk }} €</td><td class="n"><b>{{ c.gesamt|stk }} €</b></td></tr>{% endfor %}</table></div>
+<div class="panel"><h2>Die zehn teuersten Artikel</h2><table><tr><th>Artikel</th><th class="n">zu hoch</th><th class="n">zu niedrig</th><th class="n">gesamt</th></tr>
+  {% for t in e.top %}<tr><td><a href="{% url 'artikel' t.artikel %}">{{ t.artikel }}</a></td><td class="n">{{ t.zu_hoch|stk }} €</td><td class="n">{{ t.zu_niedrig|stk }} €</td><td class="n"><b>{{ t.gesamt|stk }} €</b></td></tr>{% endfor %}</table></div>
+</div>
+{% else %}<div class="panel">Noch keine Preise. Den Artikelstamm mit einer Spalte „Preis“ oder „Standardkosten“ importieren (Verwaltung → Import).</div>{% endif %}
+{% endblock %}

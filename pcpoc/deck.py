@@ -298,6 +298,10 @@ def write_html(spec: dict, path: str | Path, bericht_png: Path | None = None) ->
     bp = bericht_png or (ROOT / "docs" / "bericht.png")
     if bp.exists():
         bilder["bericht.png"] = _data_uri(bp, "image/png")
+    for f in spec.get("folien", []):  # alle Bilder der Bild-Folien einbetten (z. B. plattform.png)
+        name = f.get("bild")
+        if name and name not in bilder and (ROOT / "docs" / name).exists():
+            bilder[name] = _data_uri(ROOT / "docs" / name, "image/png")
     assets = dict(logo=_data_uri(a / "logo_premium_dunkel.svg", "image/svg+xml"),
                   kugel=_data_uri(a / "punktkugel.svg", "image/svg+xml"),
                   wortmarke=_data_uri(a / "wortmarke_weiss.svg", "image/svg+xml"), bilder=bilder)

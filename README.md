@@ -40,6 +40,8 @@ python manage.py test planung         # Plattform-Tests (Demo, Freigabe, Dokumen
 cd .. && python -m pytest -q          # Rechenkern-Tests; Referenz-Tests laufen, sobald tests/referenz/ befüllt ist
 ```
 
+**Oberfläche:** Startseite „Heute zu tun“ (Aufgaben nach Mengenwirkung sortiert, je Aufgabe ein Satz und ein Knopf), Artikel-Detail mit Entscheidungsbox oben und Reitern für Rechenweg, Empfehlungen, Hinweise, Parameter, Treffgenauigkeit und Versionen. Unter **Auswertung**: Rhythmus-Simulation (Quartals- gegen Monatslauf), Euro-Bewertung (Fehlplanung × Preis, zu hoch / zu niedrig), Excel-Abgleich (Parität gegen den Referenz-Forecast, Toleranz `referenz.toleranz`) und **Abschluss**: Bericht und Präsentation (HTML, PowerPoint, Markdown) werden auf Knopfdruck aus den Zahlen in der Datenbank erzeugt. Solange keine echten Preise und keine echte Excel geladen sind, rechnen Euro-Bewertung und Parität mit gekennzeichneten synthetischen Beispielwerten.
+
 **Betrieb:** Render (Docker), Postgres für alle Forecast-Stände, Freigaben und Accuracy-Historie; Einstellungen über Umgebungsvariablen ([`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)). Schnittstellen: `POST /api/v1/import/<art>`, `GET /api/v1/forecast`, `GET /api/v1/accuracy` (Basic Auth).
 
 ## Voranalyse (Angebotsleistungen)

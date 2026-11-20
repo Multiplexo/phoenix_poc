@@ -49,6 +49,8 @@ class DateiQuelle(Quelle):
                 return pio.load_forecasts(p)
             if art == "bestand":
                 return lade_bestand(pio.read_table(p))
+            if art == "referenz":
+                return lade_referenz(pio.read_table(p))
             raise ValueError(f"Unbekannte Importart {art}")
         finally:
             p.unlink(missing_ok=True)
@@ -105,3 +107,25 @@ def lade_bestand(df: pd.DataFrame) -> pd.DataFrame:
     if "date" in df.columns:
         df["date"] = pd.to_datetime(df["date"], errors="coerce")
     return df
+
+
+def lade_referenz(df: pd.DataFrame) -> pd.DataFrame:
+    """Referenz-Forecast aus der Excel, lang (Artikel, [Standort], Monat, Wert) oder breit (Monate als Spalten)."""
+    import re
+    if "article" not in df.columns:
+        raise ValueError(f"Referenz: Spalte Artikel/Material fehlt. Vorhanden: {list(df.columns)}")
+    monatsspalten = [c for c in df.columns if re.match(r"^\d{4}-\d{2}", str(c)) or isinstance(c, (pd.Timestamp,))]
+    if monatsspalten:  # breit
+        idx = ["article"] + (["site"] if "site" in df.columns else [])
+        df = df.melt(id_vars=idx, value_vars=monatsspalten, var_name="month", value_name="value")
+    else:
+        wert = next((c for c in df.columns if str(c).lower() in ("value", "wert", "brutto", "prognose", "forecast", "menge", "final_qty", "qty")), None)
+        mon = next((c for c in df.columns if str(c).lower() in ("month", "target", "monat", "zielmonat", "periode")), None)
+        if not wert or not mon:
+            raise ValueError("Referenz: Monats- und Wertspalte nicht gefunden (z. B. Monat, Prognose) oder Monate als Spalten (YYYY-MM).")
+        df = df.rename(columns={wert: "value", mon: "month"})
+    df["article"] = df["article"].astype(str).str.strip()
+    df["site"] = df["site"].fillna("").astype(str) if "site" in df.columns else ""
+    df["month"] = pd.PeriodIndex(pd.to_datetime(df["month"].astype(str).str[:7]), freq="M")
+    df["value"] = pd.to_numeric(df["value"], errors="coerce").fillna(0.0)
+    return df[["article", "site", "month", "value"]]

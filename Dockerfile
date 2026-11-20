@@ -28,11 +28,15 @@ FROM python:3.12-slim
 ENV PYTHONUNBUFFERED=1 PORT=10000 PUBLISHED_DIR=/app/plattform/published
 WORKDIR /app
 COPY requirements.txt .
+# node für die PowerPoint-Fassung des automatisch erzeugten Abschlusses (/auswertung/abschluss/)
+RUN apt-get update && apt-get install -y --no-install-recommends nodejs && rm -rf /var/lib/apt/lists/*
 RUN pip install --no-cache-dir pandas numpy openpyxl pyyaml django==5.1.4 gunicorn==23.0.0 whitenoise==6.8.2 \
     "psycopg[binary]==3.2.3" dj-database-url==2.3.0 pypdf==5.1.0 "anthropic>=2.10"
 COPY pcpoc ./pcpoc
 COPY config ./config
 COPY plattform ./plattform
+COPY --from=pptx /app/deck ./deck
+COPY docs/*.png ./docs/
 COPY deploy/bericht_index.html /app/plattform/published/index.html
 COPY --from=build /app/out/voranalyse.html /app/out/voranalyse.xlsx /app/plattform/published/
 COPY --from=pptx /app/out/praesentationen /app/plattform/published/praesentationen

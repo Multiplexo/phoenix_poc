@@ -1,9 +1,10 @@
 from django.urls import path, re_path
 
-from planung import views, views_dokumente
+from planung import views, views_auswertung, views_dokumente
 
 urlpatterns = [
-    path("", views.uebersicht, name="uebersicht"),
+    path("", views.heute, name="heute"),
+    path("artikel/", views.uebersicht, name="uebersicht"),
     path("artikel/<str:nummer>/", views.artikel_detail, name="artikel"),
     path("import/", views.importe, name="import"),
     path("dokumente/", views_dokumente.liste, name="dokumente"),
@@ -14,6 +15,10 @@ urlpatterns = [
     path("matrix/", views.matrix, name="matrix"),
     path("parameter/", views.parameter, name="parameter"),
     path("accuracy/", views.accuracy, name="accuracy"),
+    path("auswertung/rhythmus/", views_auswertung.rhythmus, name="rhythmus"),
+    path("auswertung/euro/", views_auswertung.euro, name="euro"),
+    path("auswertung/excel-abgleich/", views_auswertung.paritaet, name="paritaet"),
+    path("auswertung/abschluss/", views_auswertung.abschluss, name="abschluss"),
     path("hinweise/", views.hinweise, name="hinweise"),
     path("laeufe/", views.laeufe, name="laeufe"),
     path("werke/", views.werke, name="werke"),

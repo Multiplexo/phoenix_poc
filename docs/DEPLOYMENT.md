@@ -15,7 +15,7 @@ Ein Web Service (Docker) im Workspace „Multiplexo GmbH“, Region Frankfurt, d
 
 1. **Python**: rechnet Bericht und Präsentationen (HTML/JSON) mit synthetischen Daten.
 2. **Node**: erzeugt die PowerPoint-Dateien.
-3. **Python**: Plattform mit `collectstatic`. Gestartet wird über `deploy/start.sh` (`migrate`, optional Demo laden, gunicorn auf `$PORT`).
+3. **Python**: Plattform mit `collectstatic`, dazu `nodejs`, `deck/` (mit `node_modules` aus Stufe 2) und `docs/*.png`, damit der automatische Abschluss auch als PowerPoint erzeugt werden kann. Gestartet wird über `deploy/start.sh`: `migrate` mit Sperr-Zeitgrenze (20 s, bis zu 3 Versuche, Fehler stehen im Log), danach gunicorn auf `$PORT`. Demo-Ergänzung (`SEED_DEMO=1`) und KI-Selbsttest laufen im Hintergrund, damit der Port sofort erreichbar ist.
 
 ## Umgebungsvariablen
 

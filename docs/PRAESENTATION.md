@@ -50,6 +50,10 @@ Ziel: Nachweis „ob und wo“ Mehrwert entsteht, Empfehlung für IBP und das we
 | 12 | Empfehlung für SAP IBP | was in IBP konfiguriert werden sollte, was zusätzlich nötig ist | Abschlussbericht |
 | 13 | Nächste Schritte | Option auf Verlängerung / Folgeangebot | – |
 
+### Automatisch aus der Plattform
+
+Unter **Auswertung → Abschluss** erzeugt die Plattform Bericht und Präsentation direkt aus der Datenbank: Parität mit der Excel, WMAPE/Bias/FVA, Rhythmus-Simulation, Euro-Bewertung und Messung des Pilots „Kontext lesen“. Downloads: Präsentation (HTML, PowerPoint), Bericht (HTML, Markdown). Folien mit Demo-Zahlen sind als solche gekennzeichnet. Die Tabelle oben bleibt die inhaltliche Gliederung; die automatische Fassung ersetzt das manuelle Übertragen der Zahlen.
+
 ## Umsetzung
 
 Beide Präsentationen entstehen aus **einer Quelle** (`pcpoc/deck.py`) in **zwei Fassungen**, beide im Multiplexo-Design nach Brandbook (Stand November 2026): Midnight Navy, Champagnergold und Electric Cyan, Montserrat, Punktkugel, Lichtstreifen, Eyebrow mit Goldlinie, zweifarbige Headline, Karten und Fortschrittsleiste.

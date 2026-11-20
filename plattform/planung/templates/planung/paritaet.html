@@ -1,0 +1,27 @@
+{% extends "planung/base.html" %}{% load planung_tags %}
+{% block title %}Abgleich mit der Excel{% endblock %}
+{% block content %}
+<h1>Abgleich mit der Planungs-Excel</h1>
+<div class="sub">Rechnet die Plattform dasselbe wie die heutige Excel („AE Welt_BU PS“)? Verglichen wird der aktuelle Vorschlag (brutto) mit dem importierten Ergebnis der Excel, je Artikel{% if p.mit_standort %}, Standort{% endif %} und Monat.</div>
+{% if p.vorhanden %}
+{% if p.synthetisch %}<div class="msg warning">Synthetische Beispiel-Referenz. Aussagekräftig wird der Abgleich erst mit der echten Excel (Anforderungsliste B1/B6).</div>{% endif %}
+<form class="toolbar" method="get">Toleranz <input name="toleranz" size="3" value="{% widthratio p.toleranz 1 100 %}"> % <button>Neu vergleichen</button>
+  <span class="muted">Referenz: {{ p.imp.dateiname }}, importiert {{ p.imp.am|date:"d.m.Y" }}</span></form>
+<div class="kpis">
+  <div class="kpi g"><div class="l">Innerhalb der Toleranz</div><div class="v">{{ p.anteil_ok|pct }}</div><div class="h">{{ p.n_vergleichbar }} Positionen, Toleranz ±{{ p.toleranz|pct }}</div></div>
+  <div class="kpi"><div class="l">Summe Excel</div><div class="v">{{ p.summe_ref|stk }}</div><div class="h">Stück</div></div>
+  <div class="kpi"><div class="l">Summe Plattform</div><div class="v">{{ p.summe_plattform|stk }}</div><div class="h">Stück</div></div>
+  <div class="kpi"><div class="l">Ohne Gegenstück</div><div class="v">{{ p.ohne_gegenstueck }}</div><div class="h">Referenzzeilen ohne Plattform-Wert</div></div>
+</div>
+<div class="grid2">
+<div class="panel"><h2>Je Artikel (größte Abweichung zuerst)</h2><div class="scroll" style="max-height:480px"><table><tr><th>Artikel</th><th class="n">Excel</th><th class="n">Plattform</th><th class="n">Abweichung</th><th class="n">in Toleranz</th></tr>
+  {% for x in p.artikel %}<tr><td><a href="{% url 'artikel' x.artikel %}">{{ x.artikel }}</a></td><td class="n">{{ x.referenz|stk }}</td><td class="n">{{ x.plattform|stk }}</td><td class="n"><span class="chip {% if x.ok == 1 %}ok{% else %}warn{% endif %}">{{ x.abw|pct:"s" }}</span></td><td class="n">{{ x.ok|pct }}</td></tr>{% endfor %}</table></div></div>
+<div class="panel"><h2>Größte Abweichungen je Position</h2><table><tr><th>Artikel</th>{% if p.mit_standort %}<th>Standort</th>{% endif %}<th>Monat</th><th class="n">Excel</th><th class="n">Plattform</th><th class="n">Abw.</th></tr>
+  {% for z in p.groesste %}<tr><td>{{ z.artikel }}</td>{% if p.mit_standort %}<td>{{ z.standort }}</td>{% endif %}<td>{{ z.monat|ml }}</td><td class="n">{{ z.referenz|stk }}</td><td class="n">{{ z.plattform|stk }}</td><td class="n">{{ z.abw|pct:"s" }}</td></tr>{% endfor %}</table>
+  <p class="note">Jede Abweichung außerhalb der Toleranz wird erklärt oder als offener Punkt geführt (docs/offene_punkte.md).</p></div>
+</div>
+{% else %}
+<div class="panel"><p>Noch keine Referenz importiert. Unter Verwaltung → Import die Art „Referenz-Forecast aus der Excel“ wählen.</p>
+<p class="note">Erwartet: Artikel/Material, optional Standort, und entweder Monat + Wert (z. B. „Prognose“) oder die Monate als Spalten (YYYY-MM). Toleranz: ±{{ p.toleranz|pct }} (Parameter referenz.toleranz).</p></div>
+{% endif %}
+{% endblock %}

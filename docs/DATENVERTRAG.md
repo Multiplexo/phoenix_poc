@@ -22,6 +22,16 @@ Der Prototyp verdichtet auf Monate. Fehlende Monate gelten als 0.
 | description, product_group | nein | Anzeige, Auswertung |
 | cluster | empfohlen | z. B. standard, hyperscaler, ramp_up, ramp_down |
 | lead_time_months | empfohlen | WBZ-Versatz für den Vergleich Forecast ↔ Ist; sonst Standard aus `params.yaml` |
+| price | optional | Preis bzw. Standardkosten je Stück in Euro; Grundlage der Euro-Bewertung |
+
+## referenz (optional): Forecast aus der heutigen Excel („AE Welt_BU PS“)
+
+Für den Excel-Abgleich (Parität). Zwei Formen werden erkannt:
+
+- **lang:** Artikel, optional Standort, Monat (`YYYY-MM`), Wert (Spaltennamen z. B. Prognose, Forecast, Menge, Brutto)
+- **breit:** Artikel, optional Standort, je Monat eine Spalte `YYYY-MM`
+
+Verglichen wird mit der Bruttomenge des aktuellen Vorschlags der Plattform. Toleranz: `referenz.toleranz` in `config/params.yaml` (Standard ±2 %).
 
 ## forecasts (Pflicht): Forecast-Stände
 

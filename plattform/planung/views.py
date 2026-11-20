@@ -128,11 +128,8 @@ def artikel_detail(request, nummer):
     lbl = [m for m, _ in hist] + [m for m in sorted(fwd_b) if m not in dict(hist)]
     chart = dict(labels=lbl, heute=str(sm) if sm else "", series=[
         dict(name="Ist (Auftragseingang)", farbe="ist", werte=[dict(hist).get(m) for m in lbl]),
-        dict(name=f"Freigegebener Forecast (WBZ-Versatz {services.lag(a)} M.)", farbe="final", werte=[acc[m].forecast if m in acc else None for m in lbl]),
-        dict(name="Statistik damals", farbe="stat", gestrichelt=True, werte=[acc[m].stat if m in acc else None for m in lbl]),
-        dict(name="Aktuell freigegeben", farbe="stat2", werte=[fwd_f.get(m) for m in lbl]) if fwd_f else None,
-        dict(name="Vorschlag Brutto", farbe="final", dick=True, werte=[fwd_b.get(m) for m in lbl]),
-        dict(name="Vorschlag Netto", farbe="emp", gestrichelt=True, werte=[fwd_n.get(m) for m in lbl]),
+        dict(name="Freigegebener Forecast (mit Lieferzeit-Versatz)", farbe="stat2", werte=[acc[m].forecast if m in acc else None for m in lbl]),
+        dict(name="Neuer Vorschlag", farbe="final", dick=True, werte=[fwd_b.get(m) for m in lbl]),
     ])
     chart["series"] = [s for s in chart["series"] if s]
     k = services.kennzahlen(AccuracyWert.objects.filter(standort="", artikel=nummer, monat__gte=services.monat(sm - 12)) if sm else AccuracyWert.objects.none())
@@ -147,12 +144,24 @@ def artikel_detail(request, nummer):
         recs = []
         messages.warning(request, f"Voranalyse nicht verfügbar: {e}")
     versionen = ArtikelForecast.objects.filter(artikel=nummer).select_related("lauf")[:15]
+    offen_sig = [x for x in signale if x.offen]
+    if offen_sig:
+        grund = dict(titel=offen_sig[0].get_art_display(), text=offen_sig[0].text, quelle="Hinweis aus dem Loop")
+    elif recs:
+        grund = dict(titel=recs[0].titel, text=recs[0].text, quelle=f"Voranalyse · Datenbasis: {recs[0].basis}")
+    elif vs:
+        grund = dict(titel="Regulärer Lauf", text=vs.erklaerung.get("rechnung", ""), quelle=vs.lauf.get_anlass_display())
+    else:
+        grund = None
+    vergleich = None
+    if vs and fg and vs.id != fg.id and fg.brutto_summe:
+        vergleich = dict(alt=fg.brutto_summe, neu=vs.brutto_summe, rel=vs.brutto_summe / fg.brutto_summe - 1)
     return render(request, "planung/artikel.html", dict(
         a=a, vs=vs, fg=fg, tabelle=tabelle, monate=monate, summen=summen, chart=chart, k=k, signale=signale,
         offene_ausreisser=offene_ausreisser, entscheidungen=AusreisserEntscheidung.objects.filter(artikel=nummer).order_by("-monat"),
         projekte=Projektmenge.objects.filter(artikel=nummer, aktiv=True).order_by("ab"),
         wachstum=Marktwachstum.objects.filter(aktiv=True).filter(Q(ebene="artikel", schluessel=nummer) | Q(ebene="produktgruppe", schluessel=a.produktgruppe) | Q(ebene="global")),
-        recs=recs, versionen=versionen, lag=services.lag(a), clusters=list(services.params()["baseline"]["cluster"].keys()),
+        recs=recs, versionen=versionen, lag=services.lag(a), grund=grund, vergleich=vergleich, clusters=list(services.params()["baseline"]["cluster"].keys()),
         standorte=sorted(tabelle.keys()), freigabe_moeglich=_freigabe_moeglich(request, vs)))
 
 
@@ -228,6 +237,8 @@ def _detail_post(request, a):
         messages.error(request, str(e))
     except (ValueError, KeyError) as e:
         messages.error(request, f"Eingabe unvollständig oder ungültig: {e}")
+    if request.POST.get("zurueck", "").startswith("/"):
+        return redirect(request.POST["zurueck"])
     return redirect("artikel", nummer=a.nummer)
 
 
@@ -555,3 +566,12 @@ def api_accuracy(request):
     werte = [dict(artikel=v.artikel, standort=v.standort, monat=str(v.monat)[:7], lag=v.lag, forecast=round(v.forecast, 2),
                   statistik=round(v.stat or 0, 2), ist=round(v.ist, 2)) for v in qs.order_by("artikel", "standort", "monat")[:5000]]
     return JsonResponse({"ebene": ebene, "kennzahlen": services.kennzahlen(qs), "werte": werte}, json_dumps_params={"ensure_ascii": False})
+
+
+def heute(request):
+    """Startseite: alle offenen Aufgaben in einer Liste, nach Mengenwirkung sortiert."""
+    liste = services.aufgaben()
+    zaehler = defaultdict(int)
+    for x in liste:
+        zaehler[x["art"]] += 1
+    return render(request, "planung/heute.html", dict(top=liste[:10], rest=liste[10:], n=len(liste), zaehler=dict(zaehler)))

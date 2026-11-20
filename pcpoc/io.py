@@ -32,6 +32,7 @@ ALIASES = {
     "cluster": ["cluster", "planungscluster"],
     "lead_time_months": ["lead_time_months", "wbz_monate", "lag_monate"],
     "site": ["site", "standort", "werk", "werks", "produktionsstandort"],
+    "price": ["price", "preis", "standardpreis", "stprs", "standardkosten", "stueckpreis", "verp"],
     "snapshot": ["snapshot", "stand", "forecast_stand", "erstellt"],
     "target": ["target", "zielmonat", "monat", "periode"],
     "stat_qty": ["stat_qty", "statistisch", "stat_forecast", "systemvorschlag"],
@@ -100,7 +101,11 @@ def load_articles(path) -> pd.DataFrame:
     for c, default in (("description", ""), ("product_group", ""), ("cluster", "unbekannt"), ("lead_time_months", None)):
         if c not in df.columns:
             df[c] = default
-    return df[["article", "description", "product_group", "cluster", "lead_time_months"]]
+    cols = ["article", "description", "product_group", "cluster", "lead_time_months"]
+    if "price" in df.columns:  # optional: Standardkosten/Preis je Stück (Euro-Bewertung)
+        df["price"] = pd.to_numeric(df["price"].astype(str).str.replace(",", "."), errors="coerce")
+        cols.append("price")
+    return df[cols]
 
 
 def load_matrix(path) -> pd.DataFrame:

@@ -1,0 +1,23 @@
+{% extends "planung/base.html" %}{% load planung_tags %}
+{% block title %}Abschluss{% endblock %}
+{% block content %}
+<h1>Abschluss: Bericht und Präsentation</h1>
+<div class="sub">Beides wird bei jedem Aufruf aus den aktuellen Zahlen der Plattform erzeugt. Mit echten Daten entfällt das Kennzeichen „Demo-Daten“ automatisch.</div>
+{% if z.demo %}<div class="msg warning">Aktuell sind Demo-Daten geladen.</div>{% endif %}
+<div class="kpis">
+  <div class="kpi"><div class="l">Gleich wie die Excel</div><div class="v">{% if z.paritaet.vorhanden %}{{ z.paritaet.anteil_ok|pct }}{% else %}–{% endif %}</div></div>
+  <div class="kpi"><div class="l">Abweichung heute</div><div class="v">{{ z.gesamt.wmape|pct }}</div><div class="h">Tendenz {{ z.gesamt.bias|pct:"s" }}</div></div>
+  <div class="kpi g"><div class="l">Monatslauf statt Quartal</div><div class="v">{% if z.rhythmus.gesamt.n %}{{ z.rhythmus.gesamt.verbesserung|pp }}{% else %}–{% endif %}</div><div class="h">{% if z.euro.rhythmus_euro %}{{ z.euro.rhythmus_euro|stk }} € weniger Fehlplanung{% endif %}</div></div>
+  <div class="kpi"><div class="l">Vorher bekannt</div><div class="v">{{ z.messung.abdeckung|pct }}</div><div class="h">Vorwarnzeit {% if z.messung.vorwarnzeit %}{{ z.messung.vorwarnzeit|floatformat:1 }} M.{% else %}–{% endif %}</div></div>
+</div>
+<div class="grid2">
+<div class="panel"><h2>Präsentation</h2>
+  <p class="note">Multiplexo-Design, gleiche Folienlogik wie die Challenge-Präsentation.</p>
+  <a class="btn p" href="?datei=praesentation.html" target="_blank">Präsentieren (HTML)</a>
+  <a class="btn" href="?datei=praesentation.pptx">PowerPoint herunterladen</a></div>
+<div class="panel"><h2>Abschlussbericht</h2>
+  <p class="note">Zum Lesen und Drucken (HTML) oder zum Weiterbearbeiten (Markdown).</p>
+  <a class="btn p" href="?datei=bericht.html" target="_blank">Bericht öffnen</a>
+  <a class="btn" href="?datei=bericht.md">Markdown herunterladen</a></div>
+</div>
+{% endblock %}
