@@ -1,12 +1,6 @@
 # Deployment auf Render
 
-Ein Web Service (Docker) im Workspace „Multiplexo GmbH“, Region Frankfurt, im **kostenlosen Plan**.
-
-**Kostenfreier Betrieb (aktuell):** Ohne `DATABASE_URL` nutzt die Plattform SQLite im Container. Das kostet nichts, hat aber zwei Folgen:
-- Daten sind nicht dauerhaft. Bei jedem Deployment und jedem Neustart (der kostenlose Plan schläft nach etwa 15 Minuten ohne Aufruf) startet die Plattform frisch und lädt die Demo-Daten neu (`SEED_DEMO=1`).
-- Änderungen, Freigaben und Importe gehen dabei verloren. Für Vorführungen reicht das, für echten Betrieb nicht.
-
-**Dauerhafter Betrieb (später):** Eine Render-Postgres anlegen (kostenpflichtig) und `DATABASE_URL` setzen. Der Code muss dafür nicht geändert werden.
+Ein Web Service (Docker) im Workspace „Multiplexo GmbH“, Region Frankfurt, dazu eine Render-Postgres-Datenbank.
 
 | Pfad | Inhalt |
 |---|---|
@@ -27,7 +21,7 @@ Ein Web Service (Docker) im Workspace „Multiplexo GmbH“, Region Frankfurt, i
 
 | Variable | Pflicht | Bedeutung |
 |---|---|---|
-| `DATABASE_URL` | nein | Verbindung zu einer dauerhaften Datenbank (Postgres); ohne: SQLite im Container, nicht dauerhaft |
+| `DATABASE_URL` | ja | interne Verbindung zur Render-Postgres |
 | `DJANGO_SECRET_KEY` | ja | geheimer Schlüssel (in Render generiert) |
 | `BASIC_AUTH_USER`, `BASIC_AUTH_PASSWORD` | ja | Zugang. Ohne Zugang liefert die Plattform nur einen Hinweis (fail closed). |
 | `BASIC_AUTH_USERS` | nein | weitere Zugänge `name:passwort;name2:passwort2`; Namen erscheinen an Freigaben und im Protokoll |
