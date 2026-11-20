@@ -30,7 +30,8 @@ class Artikel(models.Model):
 
 class ImportLauf(models.Model):
     ARTEN = [("dto", "Auftragseingang (DTO)"), ("bestand", "Bestand / Transit / Intercompany"), ("matrix", "Matrix"),
-             ("artikel", "Artikelstamm (inkl. Preis)"), ("historie", "Forecast-Historie"), ("referenz", "Referenz-Forecast aus der Excel")]
+             ("artikel", "Artikelstamm (inkl. Preis)"), ("historie", "Forecast-Historie"), ("referenz", "Referenz-Forecast aus der Excel"),
+             ("ae_welt", "AE Welt_Land alle (Auftragseingang je Land)")]
     art = models.CharField(max_length=20, choices=ARTEN)
     quelle = models.CharField(max_length=20, default="datei")  # datei | rest
     dateiname = models.CharField(max_length=255, blank=True)
@@ -325,3 +326,19 @@ class Referenzwert(models.Model):
     standort = models.CharField(max_length=60, blank=True)  # leer = Artikelebene
     monat = models.DateField()
     wert = models.FloatField()
+
+
+class AEWeltZeile(models.Model):
+    """Eine Zeile aus dem Reiter „AE Welt_Land alle“: Material × Land, Monatswerte und die Excel-Ergebnisse der Zeile.
+    Monatsliste und Formelprüfung stehen am Import (ImportLauf.pruefung). Löschen des Imports löscht die Zeilen."""
+    importlauf = models.ForeignKey(ImportLauf, on_delete=models.CASCADE, related_name="ae_zeilen")
+    zeile = models.IntegerField()  # Excel-Zeilennummer
+    produkttyp = models.CharField(max_length=60, blank=True)
+    artikel = models.CharField(max_length=40, db_index=True)
+    bezeichnung = models.CharField(max_length=200, blank=True)
+    land = models.CharField(max_length=80)
+    werte = models.JSONField(default=list)
+    excel = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ["zeile"]

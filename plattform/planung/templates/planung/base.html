@@ -23,9 +23,9 @@
   <a href="{% url 'werke' %}" class="{% if p == 'werke' %}on{% endif %}">Forecast an die Werke</a>
   <div class="grp {% if p == 'dokumente' or p == 'dokument' or p == 'warteschlange' %}on{% endif %}" tabindex="0"><span>Wissen ▾</span><div class="dd">
     <a href="{% url 'dokumente' %}">Dokumente</a><a href="{% url 'warteschlange' %}">Ereignisse prüfen{% if offene_ereignisse %} ({{ offene_ereignisse }}){% endif %}</a><a href="{% url 'hinweise' %}">Alle Hinweise</a></div></div>
-  <div class="grp {% if p == 'accuracy' or p == 'messung' or p == 'rhythmus' or p == 'paritaet' or p == 'abschluss' or p == 'euro' %}on{% endif %}" tabindex="0"><span>Auswertung ▾</span><div class="dd">
+  <div class="grp {% if p == 'accuracy' or p == 'messung' or p == 'rhythmus' or p == 'paritaet' or p == 'ae_welt' or p == 'abschluss' or p == 'euro' %}on{% endif %}" tabindex="0"><span>Auswertung ▾</span><div class="dd">
     <a href="{% url 'accuracy' %}">Treffgenauigkeit</a><a href="{% url 'rhythmus' %}">Planungsrhythmus Quartal / Monat</a><a href="{% url 'euro' %}">Bewertung in Euro</a>
-    <a href="{% url 'paritaet' %}">Abgleich mit der Excel</a><a href="{% url 'messung' %}">Was war vorher bekannt?</a><a href="{% url 'abschluss' %}">Abschluss: Bericht und Präsentation</a><a href="/bericht/">Voranalyse und Präsentationen (Demo)</a></div></div>
+    <a href="{% url 'ae_welt' %}">AE Welt: Excel nachgerechnet</a><a href="{% url 'paritaet' %}">Abgleich mit der Excel</a><a href="{% url 'messung' %}">Was war vorher bekannt?</a><a href="{% url 'abschluss' %}">Abschluss: Bericht und Präsentation</a><a href="/bericht/">Voranalyse und Präsentationen (Demo)</a></div></div>
   <div class="grp {% if p == 'import' or p == 'matrix' or p == 'parameter' or p == 'laeufe' or p == 'protokoll' %}on{% endif %}" tabindex="0"><span>Verwaltung ▾</span><div class="dd">
     <a href="{% url 'import' %}">Import</a><a href="{% url 'matrix' %}">Matrix</a><a href="{% url 'parameter' %}">Parameter</a><a href="{% url 'laeufe' %}">Läufe</a><a href="{% url 'protokoll' %}">Protokoll</a></div></div>
 </div></nav>

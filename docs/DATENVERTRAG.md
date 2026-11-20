@@ -79,3 +79,13 @@ regeln:
 ```
 
 Ausgewertet werden derzeit `projekt`, `eol` und `lagerauffuellung`. `marktwachstum` und `sonstiges` werden erfasst und angezeigt.
+
+## ae_welt (optional): Reiter „AE Welt_Land alle“
+
+Excel unverändert hochladen (Verwaltung → Import, Art „AE Welt_Land alle“). Erkannt wird:
+
+- **Kopf in Zeile 1–2:** Product Type ID, Material (7-stellig), Bezeichnung, Land („Country (Company) DESC“)
+- **Monate als Spalten:** „Jun 2025“ … (auch deutsch „Mär 2026“, `YYYY-MM` oder Datumszellen); leere Zellen zählen als 0
+- **Auswertung der Excel:** AE6, AE3, Veränderung AE3 zu AE6, Faktor für Prognose, AE10
+
+Die Plattform liest Formeln und gespeicherte Ergebnisse, rechnet je Zeile nach und meldet überschriebene oder abweichende Formeln. „Stand des Exports“ bestimmt, ob der letzte Monat noch läuft. Der Import verändert keine Forecasts. Siehe `docs/DATENBLATT_ECHTDATEN.md`.

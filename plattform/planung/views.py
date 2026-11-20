@@ -259,6 +259,12 @@ def importe(request):
                 raise ValueError("Keine Datei gewählt")
             from . import ablage
             daten = f.read()
+            if art == "ae_welt":
+                from . import ae_welt
+                imp = ae_welt.importiere(daten, f.name, request.planer, dt.date.fromisoformat(st) if st else None,
+                                         ablage=ablage.speichern(art, f.name, daten))
+                messages.success(request, f"AE Welt: {imp.zeilen} Zeilen importiert. {imp.meldungen}")
+                return redirect("ae_welt")
             df = adapters.DateiQuelle(ablage.Upload(f.name, daten)).tabelle(art)
             imp = services.importiere(art, df, request.planer, f.name, "datei", dt.date.fromisoformat(st) if st else None,
                                       request.POST.get("bezeichnung", ""), ablage=ablage.speichern(art, f.name, daten))
@@ -275,6 +281,24 @@ def importe(request):
         return redirect("import")
     return render(request, "planung/import.html", dict(laeufe=ImportLauf.objects.all()[:30], arten=ImportLauf.ARTEN,
                                                         heute=timezone.localdate()))
+
+
+@require_POST
+def import_loeschen(request, pk):
+    """Import samt allen eingelesenen Zeilen und der abgelegten Rohdatei löschen (Echtdaten-Löschung, protokolliert).
+    Forecast-Läufe, die aus diesen Daten gerechnet wurden, bleiben als Historie bestehen."""
+    from django.core.files.storage import storages
+    imp = get_object_or_404(ImportLauf, pk=pk)
+    beschreibung = f"{imp.get_art_display()} {imp.dateiname} vom {imp.am:%d.%m.%Y %H:%M}, {imp.zeilen} Zeilen"
+    if imp.ablage:
+        try:
+            storages["default"].delete(imp.ablage)
+        except Exception:
+            pass
+    imp.delete()
+    services.protokoll(request.planer, f"Import {pk}", "Import gelöscht", beschreibung + " (inkl. Rohdatei)")
+    messages.success(request, f"Gelöscht: {beschreibung}. Die Rohdatei wurde entfernt.")
+    return redirect("import")
 
 
 @csrf_exempt

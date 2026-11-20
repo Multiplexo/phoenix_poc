@@ -37,3 +37,12 @@ def pp(v):
     if v is None or v == "":
         return "–"
     return (f"{float(v) * 100:+.1f}".replace(".", ",") + " Pp.").replace("-", "−")
+
+
+@register.filter
+def pp_besser(v):
+    """Differenz zweier Abweichungen als Prozentpunkte: positiv = besser."""
+    if v is None:
+        return "–"
+    x = float(v) * 100
+    return (f"{abs(x):.1f} Prozentpunkte " + ("genauer" if x > 0 else "ungenauer")).replace(".", ",")

@@ -1,0 +1,57 @@
+{% extends "planung/base.html" %}{% load planung_tags %}
+{% block title %}AE Welt nachgerechnet{% endblock %}
+{% block content %}
+<h1>AE Welt: die Excel nachgerechnet</h1>
+<div class="sub">Reiter „AE Welt_Land alle“: Auftragseingang von Fremdkunden (3rd party) je Material und Land. Die Plattform rechnet die Formeln der Excel nach, prüft sie und vergleicht, welche Fortschreibung die tatsächlichen Aufträge am besten getroffen hätte. Forecasts und Freigaben bleiben unverändert.</div>
+{% if a.vorhanden %}
+{% with b=a.befunde r=a.rueck %}
+{% if a.synthetisch %}<div class="msg warning">Synthetische Probedatei: Die Zahlen zeigen nur das Verfahren.</div>{% else %}<div class="msg info">Echtdaten: {{ a.imp.dateiname }}, importiert {{ a.imp.am|date:"d.m.Y H:i" }} von {{ a.imp.von }}. Löschen unter Verwaltung → Import.</div>{% endif %}
+<div class="kpis">
+  <div class="kpi"><div class="l">Datenbasis</div><div class="v">{{ b.artikel }}</div><div class="h">Materialien, {{ b.laender }} Länder, {{ b.monate }} Monate ({{ b.von }} bis {{ b.bis }})</div></div>
+  <div class="kpi"><div class="l">Formeln geprüft</div><div class="v">{% if a.formeln_ok %}einheitlich{% elif a.formeln %}{{ a.formeln_fest|add:a.formeln_abweichend }} Abw.{% else %}–{% endif %}</div><div class="h">{% if a.formeln %}feste Werte: {{ a.formeln_fest }}, abweichende Formeln: {{ a.formeln_abweichend }}{% else %}keine Formeln in der Datei{% endif %}</div></div>
+  <div class="kpi"><div class="l">#DIV/0! im Faktor</div><div class="v">{{ b.div0 }}</div><div class="h">Zeilen mit AE6 = 0 ({{ b.zeilen }} Zeilen gesamt)</div></div>
+  <div class="kpi"><div class="l">Sporadische Zeilen</div><div class="v">{{ b.sporadisch_anteil|pct }}</div><div class="h">mind. jeder 2. Monat ohne Auftrag; {{ b.sporadisch_menge|pct }} der Menge</div></div>
+  <div class="kpi g"><div class="l">Beste Fortschreibung</div><div class="v">{% if r.verbesserung is not None and r.verbesserung > 0 %}Plattform{% else %}{{ r.beste_excel|default:"–" }}{% endif %}</div><div class="h">{% if r.verbesserung is not None %}Plattform gegenüber {{ r.beste_excel }}: {{ r.verbesserung|pp_besser }}{% endif %}</div></div>
+</div>
+
+<div class="grid2">
+<div class="panel"><h2>1. Formeln der Excel</h2>
+  <p class="note">Jede Auswertungsspalte wird je Zeile gelesen. Überschriebene Formeln (fester Wert statt Formel) sind typische Fehlerquellen in Planungs-Excels.</p>
+  <table><tr><th>Spalte</th><th>Standardformel</th><th class="n">Zeilen</th><th class="n">fest</th><th class="n">abweichend</th></tr>
+  {% for k, f in a.formeln.items %}<tr><td>{{ k }}</td><td><code>{{ f.standard|default:"–" }}</code></td><td class="n">{{ f.standard_n }}/{{ f.n }}</td><td class="n">{% if f.n_fest %}<span class="chip bad">{{ f.n_fest }}</span>{% else %}0{% endif %}</td><td class="n">{% if f.n_abweichend %}<span class="chip warn">{{ f.n_abweichend }}</span>{% else %}0{% endif %}</td></tr>{% endfor %}</table>
+  {% for k, f in a.formeln.items %}{% if f.fest %}<p class="note">{{ k }}: feste Werte in Zeile {{ f.fest|join:", " }}</p>{% endif %}{% for m, zs in f.abweichend.items %}<p class="note">{{ k }}: <code>{{ m }}</code> in Zeile {{ zs|join:", " }}</p>{% endfor %}{% endfor %}
+  <h2 style="margin-top:14px">Nachgerechnet</h2>
+  {% if a.excel_vorhanden %}<p>{{ a.abgleich.gleich }} von {{ a.abgleich.geprueft }} Excel-Ergebnissen exakt gleich ({{ a.abgleich.anteil_gleich|pct }}).</p>
+  {% if a.abgleich.abweichungen %}<table><tr><th>Material</th><th>Land</th><th>Kennzahl</th><th class="n">Excel</th><th class="n">Plattform</th></tr>{% for x in a.abgleich.abweichungen %}<tr><td>{{ x.artikel }}</td><td>{{ x.land }}</td><td>{{ x.kennzahl }}</td><td class="n">{{ x.excel|floatformat:2 }}</td><td class="n">{{ x.plattform|floatformat:2 }}</td></tr>{% endfor %}</table>{% endif %}
+  {% else %}<p class="note">Die Datei enthält keine gespeicherten Formelergebnisse (z. B. per Skript erzeugt). Die Plattform rechnet AE6, AE3, Faktor und AE10 selbst; der Ergebnisvergleich läuft automatisch, sobald die Datei einmal in Excel gespeichert wurde.</p>{% endif %}
+</div>
+<div class="panel"><h2>2. Was die Daten zeigen</h2>
+  <ul>
+    <li><b>Laufender Monat im Durchschnitt:</b> AE3 enthält {{ b.letzter_monat }}{% if b.letzter_laufend %}, der zum Stand {{ a.imp.stand|date:"d.m.Y" }} noch läuft{% endif %}. Gegenüber den drei Monaten davor ändert das AE3 um {{ b.ae3_effekt|pct:"s" }} (über alle Zeilen).{% if b.letzter_laufend %} Ein unvollständiger Monat zieht den Durchschnitt nach unten und sollte erst nach Monatsende zählen.{% endif %}</li>
+    <li><b>AE10 statt AE12:</b> Die Excel rechnet den langen Durchschnitt über 10 Monate; das Briefing spricht von AE12. Zu klären, welcher Wert in die Prognose eingeht.</li>
+    <li><b>#DIV/0!:</b> {{ b.div0 }} Zeilen haben in den letzten 6 Monaten keinen Auftrag; der Faktor ist dort nicht definiert. Die Plattform behandelt diese Fälle als sporadisch.</li>
+    <li><b>Sporadik:</b> {{ b.sporadisch_anteil|pct }} der Zeilen haben in mindestens jedem zweiten Monat keinen Auftrag ({{ b.leer_anteil|pct }} aller Zellen sind leer). Durchschnitte über 3 oder 6 Monate schwanken dort stark.</li>
+    <li><b>Konzentration:</b> Die stärksten 20 % der Materialien bringen {{ b.top20_anteil|pct }} der Menge.</li>
+    <li><b>Länder:</b> {{ b.mehrland_artikel }} Materialien gehen in mehrere Länder; bei {{ b.hauptland_wechsel }} wechselt das stärkste Land zwischen erstem und zweitem Halbjahr. Das betrifft die Zuordnung zu den Werken (Matrix).</li>
+  </ul>
+  <h2>Stärkste Länder</h2>
+  <table>{% for l in b.laender_top %}<tr><td>{{ l.land }}</td><td class="n">{{ l.menge|stk }}</td><td class="n">{{ l.anteil|pct }}</td></tr>{% endfor %}</table>
+</div>
+</div>
+
+<div class="panel"><h2>3. Rückrechnung: Welche Fortschreibung hätte die Aufträge am besten getroffen?</h2>
+  <form class="toolbar" method="get">Versatz (Monate zwischen Prognose und Auftrag, ≈ Lieferzeit) <input name="versatz" size="2" value="{{ a.versatz }}"> <button>Neu rechnen</button>
+  <span class="muted">{{ r.n }} Zielmonate{% if b.letzter_laufend %}, laufender Monat ausgeschlossen{% endif %}. Abweichung = Σ|Prognose − Ist| / Σ Ist.</span></form>
+  {% if r.n %}
+  <div class="grid3"><div>{% if chart %}<div data-chart="chart-data"></div>{{ chart|json_script:"chart-data" }}{% endif %}</div>
+  <div><table><tr><th>Methode</th><th class="n">je Material</th><th class="n">je Material × Land</th></tr>
+  {% for m in r.methoden %}<tr {% if m.methode == "Plattform" %}style="font-weight:700"{% endif %}><td>{% if m.methode == "Plattform" %}Plattform (gewichtet, Sporadik erkannt){% else %}{{ m.methode }} (Excel){% endif %}</td><td class="n">{{ m.wmape_artikel|pct }}</td><td class="n">{{ m.wmape_zeile|pct }}</td></tr>{% endfor %}</table>
+  <p class="note">Je Land ist die Abweichung höher, weil sich Schwankungen zwischen Ländern auf Materialebene ausgleichen. Für die Werke zählt die Ebene Material × Standort.</p></div></div>
+  {% else %}<p class="note">Zu wenige Monate für den gewählten Versatz.</p>{% endif %}
+</div>
+{% endwith %}
+{% else %}
+<div class="panel"><p>Noch keine Datei importiert. Unter Verwaltung → Import die Art „AE Welt_Land alle“ wählen und die Excel unverändert hochladen.</p>
+<p class="note">Erwartet: Reiter „AE Welt_Land alle“, Kopf in Zeile 1–2, Daten ab Zeile 3, Monate als Spalten („Jun 2025“ …), danach AE6, AE3, Faktor, AE10.</p></div>
+{% endif %}
+{% endblock %}

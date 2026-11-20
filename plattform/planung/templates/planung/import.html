@@ -22,13 +22,15 @@
     <dt>Matrix</dt><dd>Material (oder * für alle), Land, Standort → neue Matrix-Version</dd>
     <dt>Artikelstamm</dt><dd>Material, Bezeichnung, Produktgruppe, Cluster, WBZ in Monaten</dd>
     <dt>Historie</dt><dd>Forecast-Stand, Material, Zielmonat, Statistik, Final (freigegeben)</dd>
+    <dt>AE Welt</dt><dd>Excel mit dem Reiter „AE Welt_Land alle“ unverändert hochladen. Wird nachgerechnet und ausgewertet, verändert keine Forecasts. „Stand des Exports“ = Tag der Datei (erkennt den laufenden Monat).</dd>
   </dl>
   <p class="note">Details: docs/DATENVERTRAG.md</p>
 </div>
 </div>
 <div class="panel"><h2>Letzte Importe</h2>
-  <table><tr><th>Am</th><th>Art</th><th>Quelle</th><th>Datei</th><th>Stand</th><th class="n">Zeilen</th><th>Von</th><th>Meldungen</th></tr>
-  {% for i in laeufe %}<tr><td>{{ i.am|date:"d.m.Y H:i" }}</td><td>{{ i.get_art_display }}</td><td>{{ i.quelle }}</td><td>{{ i.dateiname }}</td><td>{{ i.stand|date:"d.m.Y" }}</td><td class="n">{{ i.zeilen }}</td><td>{{ i.von }}</td><td class="muted">{{ i.meldungen|linebreaksbr }}{% if i.ablage %}<br>Rohdatei abgelegt{% endif %}</td></tr>
-  {% empty %}<tr><td colspan="8" class="muted">Noch keine Importe.</td></tr>{% endfor %}</table>
+  <table><tr><th>Am</th><th>Art</th><th>Quelle</th><th>Datei</th><th>Stand</th><th class="n">Zeilen</th><th>Von</th><th>Meldungen</th><th></th></tr>
+  {% for i in laeufe %}<tr><td>{{ i.am|date:"d.m.Y H:i" }}</td><td>{{ i.get_art_display }}</td><td>{{ i.quelle }}</td><td>{{ i.dateiname }}</td><td>{{ i.stand|date:"d.m.Y" }}</td><td class="n">{{ i.zeilen }}</td><td>{{ i.von }}</td><td class="muted">{{ i.meldungen|linebreaksbr }}{% if i.ablage %}<br>Rohdatei abgelegt{% endif %}</td>
+    <td><form method="post" action="{% url 'import_loeschen' i.pk %}" onsubmit="return confirm('Import {{ i.dateiname|escapejs }} mit allen eingelesenen Zeilen und der Rohdatei löschen?')">{% csrf_token %}<button class="d" title="Import, eingelesene Zeilen und Rohdatei löschen">Löschen</button></form></td></tr>
+  {% empty %}<tr><td colspan="9" class="muted">Noch keine Importe.</td></tr>{% endfor %}</table>
 </div>
 {% endblock %}

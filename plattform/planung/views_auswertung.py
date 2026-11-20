@@ -51,3 +51,20 @@ def abschluss(request):
             r["Content-Disposition"] = f'attachment; filename="Abschluss_PoC_{stamp}.pptx"'
             return r
     return render(request, "planung/abschluss.html", dict(z=ab.zahlen()))
+
+
+def ae_welt(request):
+    from . import ae_welt as aw
+    try:
+        versatz = int(request.GET["versatz"]) if request.GET.get("versatz") else None
+    except ValueError:
+        versatz = None
+    a = aw.auswertung(versatz=versatz)
+    chart = None
+    if a.get("vorhanden") and a["rueck"].get("n"):
+        r = a["rueck"]
+        farben = {"AE3": "stat", "AE6": "stat2", "AE10": "ist", "Plattform": "final"}
+        chart = dict(labels=r["monate"], heute="", einheit="%", series=[
+            dict(name=m["methode"], farbe=farben[m["methode"]], dick=m["methode"] == "Plattform",
+                 werte=[round(v * 100, 1) if v is not None else None for v in m["verlauf"]]) for m in r["methoden"]])
+    return render(request, "planung/ae_welt.html", dict(a=a, chart=chart))

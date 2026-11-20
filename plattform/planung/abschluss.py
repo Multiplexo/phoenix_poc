@@ -66,7 +66,15 @@ def zahlen() -> dict:
         n_hinweise=Signal.objects.count(), n_hinweise_erledigt=Signal.objects.filter(offen=False).count(),
         n_ereignisse_geprueft=geprueft,
         n_ereignisse_bestaetigt=Ereignis.objects.filter(status__in=("bestaetigt", "korrigiert")).count(),
-        erstellt=timezone.localtime())
+        ae_welt=_ae_welt(), erstellt=timezone.localtime())
+
+
+def _ae_welt() -> dict:
+    from . import ae_welt
+    try:
+        return ae_welt.auswertung()
+    except Exception:  # Auswertung darf den Abschluss nicht blockieren
+        return dict(vorhanden=False)
 
 
 def folien(z: dict) -> dict:
@@ -105,6 +113,32 @@ def folien(z: dict) -> dict:
                       kategorien=cats, einheit="Pp.",
                       reihen=[dict(name="Gewinn durch Eingriffe", werte=[round((c["fva"] or 0) * 100, 1) for c in z["je_cluster"]], farbe="gold")],
                       text="Positiv: Die Planer-Anpassung hat die Statistik verbessert. Negativ: Sie hat sie verschlechtert."))
+    aw = z.get("ae_welt") or {}
+    if aw.get("vorhanden"):
+        b, rr = aw["befunde"], aw["rueck"]
+        formeln = ("einheitlich" if aw["formeln_ok"] else f"{aw['formeln_fest'] + aw['formeln_abweichend']} Abw.") if aw["formeln"] else "–"
+        gleich = _pct(aw["abgleich"]["anteil_gleich"]) if aw["excel_vorhanden"] else "nachgebaut"
+        s.append(dict(typ="kennzahlen", kapitel=1, eyebrow="AE Welt_Land alle", titel=["Ihre Excel,", "nachgerechnet."], akzent="cyan",
+                      demo=aw["synthetisch"],
+                      werte=[dict(wert=gleich, label="Ergebnisse gleich" if aw["excel_vorhanden"] else "Rechenweg",
+                                  hinweis="AE6, AE3, Faktor, AE10 je Zeile" if aw["excel_vorhanden"] else "AE6, AE3, Faktor, AE10 in der Plattform",
+                                  hervorheben=True),
+                             dict(wert=formeln, label="Formeln", hinweis=f"feste Werte {aw['formeln_fest']}, abweichend {aw['formeln_abweichend']}"),
+                             dict(wert=_n(b["div0"]), label="#DIV/0! im Faktor", hinweis="Zeilen ohne Auftrag in 6 Monaten"),
+                             dict(wert=_pct(b["sporadisch_anteil"]), label="Sporadisch", hinweis="mind. jeder 2. Monat ohne Auftrag")],
+                      notiz=(f"{b['artikel']} Materialien, {b['laender']} Länder, {b['monate']} Monate. AE10 statt AE12 in der Excel; "
+                             f"laufender Monat {b['letzter_monat']} {'liegt' if b['letzter_laufend'] else 'lag'} im AE3-Fenster.")))
+        if rr.get("n"):
+            ms = rr["methoden"]
+            pl = next(m for m in ms if m["methode"] == "Plattform")
+            besser = (rr.get("verbesserung") or 0) > 0
+            s.append(dict(typ="balken", kapitel=1, eyebrow="Rückrechnung auf dem Auftragseingang", akzent="gold", demo=aw["synthetisch"],
+                          titel=(["Welche Fortschreibung", "die Aufträge trifft."] if not besser else ["Die Plattform trifft", "die Aufträge besser."]),
+                          kategorien=[("Plattform" if m["methode"] == "Plattform" else m["methode"] + " (Excel)") for m in ms], einheit="%",
+                          reihen=[dict(name="Abweichung je Material", werte=[round((m["wmape_artikel"] or 0) * 100, 1) for m in ms], farbe="cyan")],
+                          text=(f"Prognose {rr['versatz']} Monate vor dem Auftrag, {rr['n']} Zielmonate. Plattform gegenüber {rr['beste_excel']}: "
+                                f"{_pp(-(rr.get('verbesserung') or 0))} Abweichung, {_n(abs(rr.get('fehler_weniger') or 0))} Stück "
+                                f"{'weniger' if (rr.get('fehler_weniger') or 0) >= 0 else 'mehr'} Fehlplanung.")))
     if r.get("n"):
         jc = z["rhythmus"]["je_cluster"]
         s.append(dict(typ="balken", kapitel=2, eyebrow="Planungsrhythmus", titel=["Monatlich planen", "zahlt sich aus."], akzent="cyan", demo=demo,
@@ -179,6 +213,7 @@ def bericht_markdown(z: dict | None = None) -> str:
                f"- **Vorher bekannt:** {_pct(m.get('abdeckung'))} der großen Fehler standen vorher in Dokumenten.", "",
                "## Datenbasis", "", f"{z['n_artikel']} Artikel, {z['n_monate']} Monate Auftragseingang ({_n(z['n_dto'])} Zeilen), "
                f"{z['n_staende']} Forecast-Stände (davon {z['n_historie']} aus der Excel-Historie), {z['n_dokumente']} Dokumente.", "",
+               *_md_ae_welt(z.get("ae_welt") or {}),
                "## Treffgenauigkeit je Cluster", "", "| Cluster | Statistik | Freigegeben | Tendenz | Eingriffe |", "|---|---|---|---|---|"]
     zeilen += [f"| {CLUSTER.get(c['cluster'], c['cluster'])} | {_pct(c['wmape_stat'])} | {_pct(c['wmape'])} | {_pct(c['bias'], True)} | {_pp(c['fva'])} |" for c in z["je_cluster"]]
     if e.get("artikel_mit_preis"):
@@ -189,3 +224,26 @@ def bericht_markdown(z: dict | None = None) -> str:
                "- Rückblickende Messung; der Pilotbetrieb zeigt die Wirkung im Alltag.", "",
                "## Empfehlung", "", "Option A: Pilotbetrieb über 3 Monate mit monatlichem Lauf für die Pilotgruppen, danach Entscheidung über Ausbau (B) und IBP-Übergabe (C)."]
     return "\n".join(zeilen) + "\n"
+
+
+def _md_ae_welt(aw: dict) -> list[str]:
+    if not aw.get("vorhanden"):
+        return []
+    b, rr, fa = aw["befunde"], aw["rueck"], aw["abgleich"]
+    z = ["## AE Welt_Land alle: Excel nachgerechnet", ""]
+    if aw["synthetisch"]:
+        z += ["> Synthetische Probedatei, Zahlen zeigen nur das Verfahren.", ""]
+    z += [f"{b['artikel']} Materialien, {b['laender']} Länder, {b['monate']} Monate ({b['von']} bis {b['bis']}).", "",
+          f"- **Formeln:** {'einheitlich' if aw['formeln_ok'] else 'Abweichungen'} (feste Werte {aw['formeln_fest']}, abweichende Formeln {aw['formeln_abweichend']}).",
+          f"- **Ergebnisse:** " + (f"{fa['gleich']} von {fa['geprueft']} Excel-Werten exakt nachgerechnet." if aw["excel_vorhanden"]
+                                    else "AE6, AE3, Faktor und AE10 nachgebaut; Datei ohne gespeicherte Ergebnisse."),
+          f"- **#DIV/0!:** {b['div0']} Zeilen mit AE6 = 0.",
+          f"- **Sporadik:** {_pct(b['sporadisch_anteil'])} der Zeilen, {_pct(b['sporadisch_menge'])} der Menge.",
+          f"- **Laufender Monat:** {b['letzter_monat']} liegt im AE3-Fenster (Wirkung auf AE3 {_pct(b['ae3_effekt'], True)}).",
+          "- **AE10 statt AE12:** zu klären, welcher Wert in die Prognose eingeht.", ""]
+    if rr.get("n"):
+        z += [f"Rückrechnung ({rr['versatz']} Monate Versatz, {rr['n']} Zielmonate), Abweichung je Material:", "",
+              "| Methode | je Material | je Material × Land |", "|---|---|---|"]
+        z += [f"| {m['methode']} | {_pct(m['wmape_artikel'])} | {_pct(m['wmape_zeile'])} |" for m in rr["methoden"]]
+        z += [""]
+    return z

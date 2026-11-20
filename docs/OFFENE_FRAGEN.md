@@ -22,3 +22,12 @@
 ## Rahmen
 14. Dürfen Gesprächsnotizen zur Strukturierung an ein externes Sprachmodell gegeben werden? (Standard: nein, Funktion ist aus.)
 15. Briefing nennt 25–30 Mio € und 250–300 Mio € Jahresbeschaffung. Welche Zahl stimmt?
+
+## Aus der Probedatei „AE Welt_Land alle“ (20.11.2026)
+
+1. **AE10 oder AE12?** Die Excel rechnet den langen Durchschnitt über 10 Monate (`=SUM(M:V)/10`), das Briefing nennt AE12. Welcher Wert geht in die Prognose ein?
+2. **Wofür wird der Faktor genutzt?** Faktor = AE3 / AE6. Mit welcher Größe wird er multipliziert (AE6, AE10, Vorjahr)? Erst damit lässt sich die Prognose der Excel exakt nachbauen.
+3. **Laufender Monat:** Die Fenster enden im letzten Monat der Datei (Nov 2026). Ist dieser Monat beim Ziehen der Zahlen schon abgeschlossen, oder geht ein halber Monat in AE3 ein?
+4. **#DIV/0!:** Wie werden Zeilen mit AE6 = 0 heute behandelt (manuell, ignoriert, Nullprognose)?
+5. **Nur 3rd party:** Intercompany-Aufträge sind nicht enthalten. Werden sie getrennt geplant oder über die Werke abgebildet?
+6. **Land → Werk:** Welche Matrix-Version gilt für die Länderzuordnung im betrachteten Zeitraum?
